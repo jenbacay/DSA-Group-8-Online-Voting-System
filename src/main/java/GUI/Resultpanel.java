@@ -18,7 +18,7 @@ public class Resultpanel extends JFrame {
     private int candidateB = 0;
     private int candidateC = 0;
 
-     Resultpanel () {
+   Resultpanel() {
 
         setTitle("Online Voting System - Voting Summary");
         setSize(600, 450);
@@ -135,7 +135,7 @@ public class Resultpanel extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            new VotingSummary();
+            new Resultpanel ();
         });
     }
 }
