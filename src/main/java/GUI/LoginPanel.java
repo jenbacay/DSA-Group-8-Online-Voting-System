@@ -26,6 +26,11 @@ public class LoginPanel extends JFrame implements ActionListener{
     private JPasswordField passwordField;
     private JButton loginButton,signUpButton;
     private ButtonGroup accountTypeGroup;
+    
+    private final String[] voterUsernames = {"voter1", "voter2"};
+    private final String[] voterPasswords = {"pass123", "pass456"};
+    private final String[] adminUsernames = {"admin1", "admin2"};
+    private final String[] adminPasswords = {"admin123", "admin456"};
 
     LoginPanel() {
 
@@ -107,23 +112,46 @@ public class LoginPanel extends JFrame implements ActionListener{
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == loginButton) {
-          if (voterRadioButton.isSelected()) {
-            JOptionPane.showMessageDialog(this,"Voter Login");
-        }        
-          
-         else if (adminRadioButton.isSelected()) {
-            JOptionPane.showMessageDialog(this,"Admin Login", "Info",JOptionPane.INFORMATION_MESSAGE);
-         }
-         
-        else{
-           JOptionPane.showMessageDialog(this,"Input First!", "Info",JOptionPane.ERROR_MESSAGE);
+        String usn = usernameField.getText().trim();
+        String pwd = new String(passwordField.getPassword()).trim();
+
+        // Check muna kung may laman
+        if (usn.isEmpty() || pwd.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please input first!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
-       } 
-        
-        else if (e.getSource() == signUpButton) {
-        JOptionPane.showMessageDialog(this,"Voter Sign Up", "Info", JOptionPane.INFORMATION_MESSAGE);
-        }        
+
+        // Voter login
+        if (voterRadioButton.isSelected()) {
+            if (isValid(voterUsernames, voterPasswords, usn, pwd)) {
+                JOptionPane.showMessageDialog(this, "Login Successful", "Info", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "The username or password is incorrect!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+        // Admin login
+        else if (adminRadioButton.isSelected()) {
+            if (isValid(adminUsernames, adminPasswords, usn, pwd)) {
+                JOptionPane.showMessageDialog(this, "Login Successful", "Info", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "The username or password is incorrect!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    else if (e.getSource() == signUpButton) {
+        JOptionPane.showMessageDialog(this, "Voter Sign Up", "Info", JOptionPane.INFORMATION_MESSAGE);
+    }
    }
+
+// Helper method para i-check ang credentials
+   private boolean isValid(String[] usernames, String[] passwords, String usn, String pwd) {
+    for (int i = 0; i < usernames.length; i++) {
+        if (usernames[i].equals(usn) && passwords[i].equals(pwd)) {
+            return true;
+        }
+    }
+    return false;
+  }
 }
 
 
