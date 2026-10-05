@@ -4,51 +4,129 @@
 
 package GUI;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.LinkedList;
 import javax.swing.*;
 
 /**
  *
  * @author JenJen
  */
-public class LoginPanel extends JFrame{
-        
-   private JLabel lblTitle, lblUsername, lblPassword;
-   private JTextField txtUsername;
-   private JPasswordField txtPassword;
-   private JButton btnLogin;
 
-    public LoginPanel() {
+
+public class LoginPanel extends JFrame implements ActionListener{
+
+    // Components
+    private JLabel titleLabel, loginAsLabel, usernameLabel, passwordLabel;
+    private JRadioButton voterRadioButton, adminRadioButton;
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JButton loginButton,signUpButton;
+    private ButtonGroup accountTypeGroup;
+
+    LoginPanel() {
 
         setTitle("Online Voting System");
-        setSize(800, 500);
+        setSize(500, 600);
+        setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(null);
-
-        lblTitle = new JLabel("ONLINE VOTING SYSTEM");
-        lblTitle.setBounds(270, 60, 300, 40);
-        add(lblTitle);
-
-        lblUsername = new JLabel("Username:");
-        lblUsername.setBounds(180, 150, 100, 30);
-        add(lblUsername);
-
-        txtUsername = new JTextField();
-        txtUsername.setBounds(280, 150, 300, 30);
-        add(txtUsername);
-
-        lblPassword = new JLabel("Password:");
-        lblPassword.setBounds(180, 200, 100, 30);
-        add(lblPassword);
-
-        txtPassword = new JPasswordField();
-        txtPassword.setBounds(280, 200, 300, 30);
-        add(txtPassword);
-
-        btnLogin = new JButton("Login");
-        btnLogin.setBounds(280, 260, 120, 40);
-        add(btnLogin);
         
-        }     
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(null);
+        mainPanel.setBackground(Color.WHITE);
+
+        titleLabel = new JLabel("ONLINE VOTING SYSTEM");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 26));
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        titleLabel.setBounds(50, 40, 400, 45);
+        mainPanel.add(titleLabel);
+        
+        loginAsLabel = new JLabel("LOGIN AS");
+        loginAsLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        loginAsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        loginAsLabel.setBounds(150, 105, 200, 30);
+        mainPanel.add(loginAsLabel);
+
+        voterRadioButton = new JRadioButton("VOTER");
+        voterRadioButton.setFont(new Font("Arial", Font.PLAIN, 14));
+        voterRadioButton.setBackground(Color.WHITE);
+        voterRadioButton.setBounds(150, 140, 90, 30);
+        mainPanel.add(voterRadioButton);
+
+        adminRadioButton = new JRadioButton("ADMIN");
+        adminRadioButton.setFont(new Font("Arial", Font.PLAIN, 14));
+        adminRadioButton.setBackground(Color.WHITE);
+        adminRadioButton.setBounds(260, 140, 90, 30);
+        mainPanel.add(adminRadioButton);
+
+        accountTypeGroup = new ButtonGroup();
+        accountTypeGroup.add(voterRadioButton);
+        accountTypeGroup.add(adminRadioButton);
+        // Select Voter by default
+        voterRadioButton.setSelected(true);
+
+        usernameLabel = new JLabel("Username / Voter ID");
+        usernameLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        usernameLabel.setBounds(80, 205, 250, 30);
+        mainPanel.add(usernameLabel);
+
+        usernameField = new JTextField();
+        usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
+        usernameField.setBounds(80, 235, 340, 40);
+        mainPanel.add(usernameField);
+
+        passwordLabel = new JLabel("Password" );
+        passwordLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        passwordLabel.setBounds(80, 300, 250, 30);
+        mainPanel.add(passwordLabel);
+
+        passwordField = new JPasswordField();
+        passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
+        passwordField.setBounds(80, 330, 340, 40);
+        mainPanel.add(passwordField);
+
+        loginButton = new JButton("LOGIN");
+        loginButton.setFont(new Font("Arial", Font.BOLD, 14));
+        loginButton.setBounds(80, 400, 160, 45);
+        mainPanel.add(loginButton);
+
+        signUpButton = new JButton("SIGN UP");
+        signUpButton.setFont(new Font("Arial", Font.BOLD, 14));
+        signUpButton.setBounds(260, 400, 160, 45);
+        mainPanel.add(signUpButton);
+
+        loginButton.addActionListener(this); 
+        signUpButton.addActionListener(this);
+
+        add(mainPanel);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == loginButton) {
+          if (voterRadioButton.isSelected()) {
+            JOptionPane.showMessageDialog(this,"Voter Login");
+        }        
+          
+         else if (adminRadioButton.isSelected()) {
+            JOptionPane.showMessageDialog(this,"Admin Login", "Info",JOptionPane.INFORMATION_MESSAGE);
+         }
+         
+        else{
+           JOptionPane.showMessageDialog(this,"Input First!", "Info",JOptionPane.ERROR_MESSAGE);
+        }
+       } 
+        
+        else if (e.getSource() == signUpButton) {
+        JOptionPane.showMessageDialog(this,"Voter Sign Up", "Info", JOptionPane.INFORMATION_MESSAGE);
+        }        
+   }
 }
+
+
+
 
 
