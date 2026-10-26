@@ -8,143 +8,154 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.LinkedList;
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 
 /**
  *
  * @author JenJen
  */
 
+public class LoginPanel extends JFrame implements ActionListener {
 
-public class LoginPanel extends JFrame implements ActionListener{
+    private JLabel titleLabel, subtitleLabel, loginAsLabel;
+    private JLabel usernameLabel, passwordLabel, footerLabel;
 
-    private JLabel titleLabel, loginAsLabel, usernameLabel, passwordLabel;
     private JRadioButton voterRadioButton, adminRadioButton;
     private JTextField usernameField;
     private JPasswordField passwordField;
-    private JButton loginButton,signUpButton;
+
+    private JButton loginButton, signUpButton;
     private ButtonGroup accountTypeGroup;
-    private final String[] voterUsernames = {"voter1", "voter2"};
-    private final String[] voterPasswords = {"pass123", "pass456"};
-    private final String[] adminUsernames = {"admin1", "admin2"};
-    private final String[] adminPasswords = {"admin123", "admin456"};
 
     public LoginPanel() {
 
         setTitle("Online Voting System");
         setSize(500, 600);
+        setLayout(null);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
+        setResizable(false);
+        getContentPane().setBackground(new Color(230, 242, 255));
+
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(null);
         mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(new LineBorder(new Color(190, 215, 240), 1));
+        mainPanel.setBounds(35, 25, 415, 515);
+        add(mainPanel);
 
         titleLabel = new JLabel("ONLINE VOTING SYSTEM");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 26));
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 23));
+        titleLabel.setForeground(new Color(25, 75, 125));
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        titleLabel.setBounds(50, 40, 400, 45);
+        titleLabel.setBounds(20, 25, 375, 40);
         mainPanel.add(titleLabel);
-        
+
+        subtitleLabel = new JLabel("Welcome! Please log in to continue.");
+        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        subtitleLabel.setForeground(Color.GRAY);
+        subtitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        subtitleLabel.setBounds(20, 65, 375, 25);
+        mainPanel.add(subtitleLabel);
+
         loginAsLabel = new JLabel("LOGIN AS");
-        loginAsLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        loginAsLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        loginAsLabel.setBounds(150, 105, 200, 30);
+        loginAsLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        loginAsLabel.setBounds(40, 115, 200, 25);
         mainPanel.add(loginAsLabel);
 
         voterRadioButton = new JRadioButton("VOTER");
-        voterRadioButton.setFont(new Font("Arial", Font.PLAIN, 14));
+        voterRadioButton.setBounds(40, 145, 120, 30);
         voterRadioButton.setBackground(Color.WHITE);
-        voterRadioButton.setBounds(150, 140, 90, 30);
         mainPanel.add(voterRadioButton);
 
         adminRadioButton = new JRadioButton("ADMIN");
-        adminRadioButton.setFont(new Font("Arial", Font.PLAIN, 14));
+        adminRadioButton.setBounds(200, 145, 120, 30);
         adminRadioButton.setBackground(Color.WHITE);
-        adminRadioButton.setBounds(260, 140, 90, 30);
         mainPanel.add(adminRadioButton);
 
         accountTypeGroup = new ButtonGroup();
         accountTypeGroup.add(voterRadioButton);
         accountTypeGroup.add(adminRadioButton);
-        // Select Voter by default
         voterRadioButton.setSelected(true);
 
         usernameLabel = new JLabel("Username / Voter ID");
-        usernameLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        usernameLabel.setBounds(80, 205, 250, 30);
+        usernameLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        usernameLabel.setBounds(40, 195, 250, 25);
         mainPanel.add(usernameLabel);
 
         usernameField = new JTextField();
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
-        usernameField.setBounds(80, 235, 340, 40);
+        usernameField.setBackground(new Color(248, 251, 255));
+        usernameField.setBorder(new LineBorder(new Color(180, 205, 230), 1));
+        usernameField.setBounds(40, 225, 335, 38);
         mainPanel.add(usernameField);
 
-        passwordLabel = new JLabel("Password" );
-        passwordLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        passwordLabel.setBounds(80, 300, 250, 30);
+        passwordLabel = new JLabel("Password");
+        passwordLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        passwordLabel.setBounds(40, 280, 250, 25);
         mainPanel.add(passwordLabel);
 
         passwordField = new JPasswordField();
         passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
-        passwordField.setBounds(80, 330, 340, 40);
+        passwordField.setBackground(new Color(248, 251, 255));
+        passwordField.setBorder(new LineBorder(new Color(180, 205, 230), 1));
+        passwordField.setBounds(40, 310, 335, 38);
         mainPanel.add(passwordField);
 
         loginButton = new JButton("LOGIN");
         loginButton.setFont(new Font("Arial", Font.BOLD, 14));
-        loginButton.setBounds(80, 400, 160, 45);
+        loginButton.setForeground(Color.WHITE);
+        loginButton.setBackground(new Color(51, 122, 183));
+        loginButton.setFocusPainted(false);
+        loginButton.setBounds(40, 375, 155, 42);
         mainPanel.add(loginButton);
 
         signUpButton = new JButton("SIGN UP");
         signUpButton.setFont(new Font("Arial", Font.BOLD, 14));
-        signUpButton.setBounds(260, 400, 160, 45);
+        signUpButton.setForeground(new Color(25, 75, 125));
+        signUpButton.setBackground(new Color(207, 229, 252));
+        signUpButton.setFocusPainted(false);
+        signUpButton.setBounds(220, 375, 155, 42);
         mainPanel.add(signUpButton);
 
-        loginButton.addActionListener(this); 
-        signUpButton.addActionListener(this);
+        footerLabel = new JLabel("ONLINE VOTING SYSTEM | 2026");
+        footerLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+        footerLabel.setForeground(Color.GRAY);
+        footerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        footerLabel.setBounds(20, 445, 375, 25);
+        mainPanel.add(footerLabel);
 
-        add(mainPanel);
+        loginButton.addActionListener(this);
+        signUpButton.addActionListener(this);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-    if (e.getSource() == loginButton) {
-        String usn = usernameField.getText().trim();
-        String pwd = new String(passwordField.getPassword()).trim();
 
-        if (usn.isEmpty() || pwd.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please input first!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+        if (e.getSource() == loginButton) {
 
-        if (voterRadioButton.isSelected()) {
-            if (isValid(voterUsernames, voterPasswords, usn, pwd)) {
-                JOptionPane.showMessageDialog(this, "Login Successful", "Info", JOptionPane.INFORMATION_MESSAGE);
+            String username = usernameField.getText();
+            String password = new String(
+                    passwordField.getPassword());
+
+            if (username.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this, "Please enter your username and password.");
+            } else if (!voterRadioButton.isSelected()
+                    && !adminRadioButton.isSelected()) {
+                JOptionPane.showMessageDialog(
+                        this, "Please select an account type.");
             } else {
-                JOptionPane.showMessageDialog(this, "The username or password is incorrect!", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(
+                        this, "Login button clicked. Database verification is not connected yet.");
             }
-        }
-        
-        else if (adminRadioButton.isSelected()) {
-            if (isValid(adminUsernames, adminPasswords, usn, pwd)) {
-                JOptionPane.showMessageDialog(this, "Login Successful", "Info", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this, "The username or password is incorrect!", "Error", JOptionPane.ERROR_MESSAGE);
-            }
+
+        } else if (e.getSource() == signUpButton) {
+
+            VoterRegistrationPanel registration = new VoterRegistrationPanel();
+            registration.setVisible(true);
+            this.dispose();
         }
     }
-    else if (e.getSource() == signUpButton) {
-        JOptionPane.showMessageDialog(this, "Voter Sign Up", "Info", JOptionPane.INFORMATION_MESSAGE);
-    }
-   }
-    
-   private boolean isValid(String[] usernames, String[] passwords, String usn, String pwd) {
-    for (int i = 0; i < usernames.length; i++) {
-        if (usernames[i].equals(usn) && passwords[i].equals(pwd)) {
-            return true;
-        }
-    }
-    return false;
-  }
 }
