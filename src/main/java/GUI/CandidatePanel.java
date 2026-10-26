@@ -31,7 +31,7 @@ public class CandidatePanel extends JFrame
     private JTable candidateTable;
     private DefaultTableModel tableModel;
 
-    public Candidate() {
+    public CandidatePanel() {
 
         setTitle("Candidate Management");
         setSize(800, 600);
