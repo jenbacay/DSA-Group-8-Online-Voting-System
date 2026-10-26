@@ -243,7 +243,10 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
 
         } else if (e.getSource() == backButton) {
 
-            
+            LoginPanel login = new LoginPanel();
+            login.setVisible(true);
+            this.dispose();
+
         }
     }
 }
