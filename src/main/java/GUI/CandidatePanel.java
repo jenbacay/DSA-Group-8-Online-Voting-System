@@ -1,13 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package GUI;
-
-/**
- *
- * @author Administrator
- */
 
 import Database.DBConnection;
 import java.awt.Color;
@@ -18,78 +9,72 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 
-public class CandidatePanel extends JFrame
-        implements ActionListener {
+public class CandidatePanel extends JPanel implements ActionListener {
 
     private JLabel titleLabel, nameLabel, partyLabel;
     private JTextField nameField, partyField;
-    private JButton addButton, updateButton, deleteButton;
-    private JButton clearButton, backButton;
+
+    private JButton addButton, updateButton;
+    private JButton deleteButton, clearButton;
+
     private JTable candidateTable;
     private DefaultTableModel tableModel;
 
+    private final Color darkBlue = new Color(20, 55, 85);
+    private final Color background = new Color(240, 246, 252);
+    private final Color buttonColor = new Color(220, 233, 245);
+
     public CandidatePanel() {
 
-        setTitle("Candidate Management");
-        setSize(800, 600);
         setLayout(null);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
-        getContentPane().setBackground(
-                new Color(230, 242, 255));
+        setBackground(background);
 
         titleLabel = new JLabel("CANDIDATE MANAGEMENT");
-        titleLabel.setBounds(20, 15, 740, 40);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(25, 75, 125));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        titleLabel.setBounds(25, 20, 650, 40);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 23));
+        titleLabel.setForeground(darkBlue);
         add(titleLabel);
 
         nameLabel = new JLabel("Candidate Name:");
-        nameLabel.setBounds(30, 75, 130, 25);
+        nameLabel.setBounds(25, 85, 115, 25);
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        nameLabel.setForeground(darkBlue);
         add(nameLabel);
 
         nameField = new JTextField();
-        nameField.setBounds(155, 75, 200, 32);
+        nameField.setBounds(140, 82, 180, 32);
+        nameField.setFont(new Font("Arial", Font.PLAIN, 13));
         nameField.setBorder(new LineBorder(Color.GRAY));
         add(nameField);
 
         partyLabel = new JLabel("Party:");
-        partyLabel.setBounds(380, 75, 60, 25);
+        partyLabel.setBounds(340, 85, 50, 25);
+        partyLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        partyLabel.setForeground(darkBlue);
         add(partyLabel);
 
         partyField = new JTextField();
-        partyField.setBounds(435, 75, 180, 32);
+        partyField.setBounds(390, 82, 160, 32);
+        partyField.setFont(new Font("Arial", Font.PLAIN, 13));
         partyField.setBorder(new LineBorder(Color.GRAY));
         add(partyField);
 
-        addButton = new JButton("Add");
-        addButton.setBounds(30, 125, 100, 35);
-        add(addButton);
-
-        updateButton = new JButton("Update");
-        updateButton.setBounds(145, 125, 100, 35);
-        add(updateButton);
-
-        deleteButton = new JButton("Delete");
-        deleteButton.setBounds(260, 125, 100, 35);
-        add(deleteButton);
-
-        clearButton = new JButton("Clear");
-        clearButton.setBounds(375, 125, 100, 35);
-        add(clearButton);
-
-        backButton = new JButton("Back to Dashboard");
-        backButton.setBounds(530, 125, 180, 35);
-        add(backButton);
+        addButton = createButton("Add", 25);
+        updateButton = createButton("Update", 125);
+        deleteButton = createButton("Delete", 225);
+        clearButton = createButton("Clear", 325);
 
         tableModel = new DefaultTableModel(
-                new String[]{"Candidate ID", "Candidate Name", "Party"}, 0) {
+                new String[]{
+                    "Candidate ID",
+                    "Candidate Name",
+                    "Party"
+                }, 0) {
 
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -98,33 +83,65 @@ public class CandidatePanel extends JFrame
         };
 
         candidateTable = new JTable(tableModel);
+        candidateTable.setFont(new Font("Arial", Font.PLAIN, 12));
+        candidateTable.setRowHeight(25);
         candidateTable.setSelectionMode(
                 ListSelectionModel.SINGLE_SELECTION);
 
+        candidateTable.getTableHeader().setFont(
+                new Font("Arial", Font.BOLD, 12));
+
+        candidateTable.getTableHeader().setReorderingAllowed(false);
+
         JScrollPane scrollPane = new JScrollPane(candidateTable);
-        scrollPane.setBounds(30, 190, 720, 320);
+        scrollPane.setBounds(25, 195, 655, 320);
+        scrollPane.setBorder(new LineBorder(
+                new Color(125, 145, 165)));
+
         add(scrollPane);
 
         addButton.addActionListener(this);
         updateButton.addActionListener(this);
         deleteButton.addActionListener(this);
         clearButton.addActionListener(this);
-        backButton.addActionListener(this);
 
         candidateTable.getSelectionModel().addListSelectionListener(e -> {
+
             if (!e.getValueIsAdjusting()) {
+
                 int row = candidateTable.getSelectedRow();
 
                 if (row != -1) {
+
                     nameField.setText(
                             tableModel.getValueAt(row, 1).toString());
+
+                    Object party = tableModel.getValueAt(row, 2);
+
                     partyField.setText(
-                            tableModel.getValueAt(row, 2).toString());
+                            party == null ? "" : party.toString());
                 }
             }
         });
 
         loadCandidates();
+    }
+
+    private JButton createButton(String text, int x) {
+
+        JButton button = new JButton(text);
+
+        button.setBounds(x, 135, 90, 35);
+        button.setFont(new Font("Arial", Font.BOLD, 12));
+        button.setForeground(darkBlue);
+        button.setBackground(buttonColor);
+        button.setFocusPainted(false);
+        button.setBorder(new LineBorder(
+                new Color(150, 170, 190)));
+
+        add(button);
+
+        return button;
     }
 
     private void loadCandidates() {
@@ -137,8 +154,13 @@ public class CandidatePanel extends JFrame
         try (Connection con = DBConnection.getConnection()) {
 
             if (con == null) {
+
                 JOptionPane.showMessageDialog(
-                        this, "Could not connect to the database.");
+                        this,
+                        "Could not connect to the database.",
+                        "Database Error",
+                        JOptionPane.ERROR_MESSAGE);
+
                 return;
             }
 
@@ -146,6 +168,7 @@ public class CandidatePanel extends JFrame
                  ResultSet rs = ps.executeQuery()) {
 
                 while (rs.next()) {
+
                     tableModel.addRow(new Object[]{
                         rs.getInt("candidate_id"),
                         rs.getString("name"),
@@ -155,8 +178,12 @@ public class CandidatePanel extends JFrame
             }
 
         } catch (SQLException e) {
+
             JOptionPane.showMessageDialog(
-                    this, "Error loading candidates: " + e.getMessage());
+                    this,
+                    "Error loading candidates: " + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -166,24 +193,35 @@ public class CandidatePanel extends JFrame
         String party = partyField.getText().trim();
 
         if (name.isEmpty() || party.isEmpty()) {
+
             JOptionPane.showMessageDialog(
-                    this, "Please enter the candidate name and party.");
+                    this,
+                    "Please enter the candidate name and party.",
+                    "Missing Information",
+                    JOptionPane.WARNING_MESSAGE);
+
             return;
         }
 
-        String sql = "INSERT INTO candidates (name, party) VALUES (?, ?)";
+        String sql = "INSERT INTO candidates (name, party) "
+                   + "VALUES (?, ?)";
 
         try (Connection con = DBConnection.getConnection()) {
 
             if (con == null) {
+
                 JOptionPane.showMessageDialog(
-                        this, "Could not connect to the database.");
+                        this,
+                        "Could not connect to the database.");
+
                 return;
             }
 
             try (PreparedStatement ps = con.prepareStatement(sql)) {
+
                 ps.setString(1, name);
                 ps.setString(2, party);
+
                 ps.executeUpdate();
             }
 
@@ -194,8 +232,12 @@ public class CandidatePanel extends JFrame
             loadCandidates();
 
         } catch (SQLException e) {
+
             JOptionPane.showMessageDialog(
-                    this, "Error adding candidate: " + e.getMessage());
+                    this,
+                    "Error adding candidate: " + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -204,8 +246,13 @@ public class CandidatePanel extends JFrame
         int row = candidateTable.getSelectedRow();
 
         if (row == -1) {
+
             JOptionPane.showMessageDialog(
-                    this, "Please select a candidate from the table.");
+                    this,
+                    "Please select a candidate from the table.",
+                    "No Candidate Selected",
+                    JOptionPane.WARNING_MESSAGE);
+
             return;
         }
 
@@ -213,8 +260,11 @@ public class CandidatePanel extends JFrame
         String party = partyField.getText().trim();
 
         if (name.isEmpty() || party.isEmpty()) {
+
             JOptionPane.showMessageDialog(
-                    this, "Please enter the candidate name and party.");
+                    this,
+                    "Please enter the candidate name and party.");
+
             return;
         }
 
@@ -227,16 +277,32 @@ public class CandidatePanel extends JFrame
         try (Connection con = DBConnection.getConnection()) {
 
             if (con == null) {
+
                 JOptionPane.showMessageDialog(
-                        this, "Could not connect to the database.");
+                        this,
+                        "Could not connect to the database.");
+
                 return;
             }
 
             try (PreparedStatement ps = con.prepareStatement(sql)) {
+
                 ps.setString(1, name);
                 ps.setString(2, party);
                 ps.setInt(3, candidateId);
-                ps.executeUpdate();
+
+                int updated = ps.executeUpdate();
+
+                if (updated == 0) {
+
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Candidate not found. Please refresh the list.");
+
+                    loadCandidates();
+                    clearFields();
+                    return;
+                }
             }
 
             JOptionPane.showMessageDialog(
@@ -246,8 +312,12 @@ public class CandidatePanel extends JFrame
             loadCandidates();
 
         } catch (SQLException e) {
+
             JOptionPane.showMessageDialog(
-                    this, "Error updating candidate: " + e.getMessage());
+                    this,
+                    "Error updating candidate: " + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -256,8 +326,13 @@ public class CandidatePanel extends JFrame
         int row = candidateTable.getSelectedRow();
 
         if (row == -1) {
+
             JOptionPane.showMessageDialog(
-                    this, "Please select a candidate from the table.");
+                    this,
+                    "Please select a candidate from the table.",
+                    "No Candidate Selected",
+                    JOptionPane.WARNING_MESSAGE);
+
             return;
         }
 
@@ -265,7 +340,8 @@ public class CandidatePanel extends JFrame
                 this,
                 "Are you sure you want to delete this candidate?",
                 "Confirm Delete",
-                JOptionPane.YES_NO_OPTION);
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
 
         if (confirm != JOptionPane.YES_OPTION) {
             return;
@@ -279,12 +355,16 @@ public class CandidatePanel extends JFrame
         try (Connection con = DBConnection.getConnection()) {
 
             if (con == null) {
+
                 JOptionPane.showMessageDialog(
-                        this, "Could not connect to the database.");
+                        this,
+                        "Could not connect to the database.");
+
                 return;
             }
 
             try (PreparedStatement ps = con.prepareStatement(sql)) {
+
                 ps.setInt(1, candidateId);
                 ps.executeUpdate();
             }
@@ -296,38 +376,46 @@ public class CandidatePanel extends JFrame
             loadCandidates();
 
         } catch (SQLException e) {
+
             JOptionPane.showMessageDialog(
                     this,
                     "Error deleting candidate: " + e.getMessage()
-                    + "\nCheck whether this candidate is already linked "
-                    + "to a vote.");
+                    + "\nCheck whether this candidate is already "
+                    + "linked to a vote.",
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void clearFields() {
+
         nameField.setText("");
         partyField.setText("");
+
         candidateTable.clearSelection();
+        nameField.requestFocusInWindow();
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
 
         if (e.getSource() == addButton) {
+
             addCandidate();
 
         } else if (e.getSource() == updateButton) {
+
             updateCandidate();
 
         } else if (e.getSource() == deleteButton) {
+
             deleteCandidate();
 
         } else if (e.getSource() == clearButton) {
-            clearFields();
 
-        } else if (e.getSource() == backButton) {
-            new Dashboard().setVisible(true);
-            dispose();
+            clearFields();
         }
     }
 }
+
+
