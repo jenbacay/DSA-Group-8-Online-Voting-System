@@ -188,9 +188,12 @@ public class Dashboard extends JFrame implements ActionListener {
 
         } else if (e.getSource() == btnCandidates) {
 
+            contentPanel.removeAll();
             CandidatePanel candidates = new CandidatePanel();
-            candidates.setVisible(true);
-            this.dispose();
+            candidates.setBounds(0, 0, 710, 600);
+            contentPanel.add(candidates);
+            contentPanel.revalidate();
+            contentPanel.repaint();
 
         } else if (e.getSource() == btnElection) {
 
