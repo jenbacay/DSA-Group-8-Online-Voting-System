@@ -4,6 +4,11 @@
 
 package GUI;
 
+import Database.DBConnection;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -20,11 +25,9 @@ public class LoginPanel extends JFrame implements ActionListener {
 
     private JLabel titleLabel, subtitleLabel, loginAsLabel;
     private JLabel usernameLabel, passwordLabel, footerLabel;
-
     private JRadioButton voterRadioButton, adminRadioButton;
     private JTextField usernameField;
     private JPasswordField passwordField;
-
     private JButton loginButton, signUpButton;
     private ButtonGroup accountTypeGroup;
 
@@ -135,27 +138,91 @@ public class LoginPanel extends JFrame implements ActionListener {
 
         if (e.getSource() == loginButton) {
 
-            String username = usernameField.getText();
-            String password = new String(
-                    passwordField.getPassword());
+        String username = usernameField.getText().trim();
+        String password = new String(passwordField.getPassword());
+        String role = "";
 
-            if (username.isEmpty() || password.isEmpty()) {
+        if (adminRadioButton.isSelected()) {
+            role = "ADMIN";
+        } else if (voterRadioButton.isSelected()) {
+            role = "VOTER";
+        }
+
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter your username and password.");
+            return;
+        }
+
+        if (role.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please select an account type.");
+            return;
+        }
+
+        String sql = "SELECT account_id, full_name, role "
+                   + "FROM accounts "
+                   + "WHERE username = ? "
+                   + "AND password_hash = SHA2(?, 256) "
+                   + "AND role = ?";
+
+        try (Connection con = DBConnection.getConnection()) {
+
+            if (con == null) {
                 JOptionPane.showMessageDialog(
-                        this, "Please enter your username and password.");
-            } else if (!voterRadioButton.isSelected()
-                    && !adminRadioButton.isSelected()) {
-                JOptionPane.showMessageDialog(
-                        this, "Please select an account type.");
-            } else {
-                JOptionPane.showMessageDialog(
-                        this, "Login button clicked. Database verification is not connected yet.");
+                        this, "Database connection failed.");
+                return;
             }
 
-        } else if (e.getSource() == signUpButton) {
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
 
-            VoterRegistrationPanel registration = new VoterRegistrationPanel();
-            registration.setVisible(true);
-            this.dispose();
+                ps.setString(1, username);
+                ps.setString(2, password);
+                ps.setString(3, role);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    if (rs.next()) {
+
+                        String fullName = rs.getString("full_name");
+
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "Welcome, " + fullName + "!");
+
+                        if ("ADMIN".equals(role)) {
+                            Dashboard dashboard = new Dashboard();
+                            dashboard.setVisible(true);
+                            this.dispose();
+
+                        } else {
+                            JOptionPane.showMessageDialog(
+                                    this,
+                                    "Voter login is verified, "
+                                    + "but the voter dashboard "
+                                    + "is not connected yet.");
+                        }
+
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "Invalid username, password, "
+                                + "or account type.");
+                    }
+                }
+            }
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Login error: " + ex.getMessage());
         }
+
+    } else if (e.getSource() == signUpButton) {
+
+        VoterRegistrationPanel registration =
+                new VoterRegistrationPanel();
+
+        registration.setVisible(true);
+        this.dispose();
     }
+}
 }
