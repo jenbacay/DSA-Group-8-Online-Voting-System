@@ -18,7 +18,7 @@ public class Resultpanel extends JFrame {
     private int candidateB = 0;
     private int candidateC = 0;
 
-   Resultpanel() {
+   public Resultpanel() {
 
         setTitle("Online Voting System - Voting Summary");
         setSize(600, 450);
