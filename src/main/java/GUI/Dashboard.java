@@ -8,6 +8,7 @@ package GUI;
  *
  * @author JenJen
  */
+
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -19,8 +20,9 @@ public class Dashboard extends JFrame implements ActionListener {
 
     private JPanel sidebar, headerPanel, contentPanel;
     private JLabel adminLabel, welcomeLabel, subtitleLabel;
+
     private JButton btnDashboard, btnVoters, btnCandidates;
-    private JButton btnElection, btnRecords, btnResults, btnLogout;
+    private JButton btnRecords, btnResults, btnLogout;
 
     private Color darkBlue = new Color(20, 55, 85);
     private Color blue = new Color(35, 125, 225);
@@ -31,6 +33,7 @@ public class Dashboard extends JFrame implements ActionListener {
 
     public Dashboard() {
 
+        // Frame Settings
         setTitle("Admin Dashboard");
         setSize(900, 600);
         setLayout(null);
@@ -40,12 +43,14 @@ public class Dashboard extends JFrame implements ActionListener {
 
         getContentPane().setBackground(background);
 
+        // Sidebar
         sidebar = new JPanel();
         sidebar.setLayout(null);
         sidebar.setBackground(darkBlue);
         sidebar.setBounds(0, 0, 190, 600);
         add(sidebar);
 
+        // Admin Profile
         JLabel profileIcon = new JLabel("●");
         profileIcon.setFont(new Font("Arial", Font.BOLD, 24));
         profileIcon.setForeground(Color.WHITE);
@@ -58,23 +63,26 @@ public class Dashboard extends JFrame implements ActionListener {
         adminLabel.setBounds(55, 15, 110, 30);
         sidebar.add(adminLabel);
 
+        // Sidebar Buttons
         btnDashboard = createButton("Dashboard", 65);
         btnVoters = createButton("Voters", 110);
         btnCandidates = createButton("Candidates", 155);
-        btnElection = createButton("Election Management", 200);
-        btnRecords = createButton("Vote Records", 245);
-        btnResults = createButton("Results & Analytics", 290);
-        btnLogout = createButton("Logout", 335);
+        btnRecords = createButton("Vote Records", 200);
+        btnResults = createButton("Results & Analytics", 245);
+        btnLogout = createButton("Logout", 290);
 
+        // Main Content Panel
         contentPanel = new JPanel();
         contentPanel.setLayout(null);
         contentPanel.setBackground(background);
         contentPanel.setBounds(190, 0, 710, 600);
         add(contentPanel);
 
+        // Display Dashboard First
         showDashboard();
     }
 
+    // Create Sidebar Button
     private JButton createButton(String text, int y) {
 
         JButton button = new JButton(text);
@@ -92,10 +100,12 @@ public class Dashboard extends JFrame implements ActionListener {
         return button;
     }
 
+    // Dashboard Screen
     private void showDashboard() {
 
         contentPanel.removeAll();
 
+        // Header
         headerPanel = new JPanel();
         headerPanel.setLayout(null);
         headerPanel.setBackground(Color.WHITE);
@@ -108,25 +118,33 @@ public class Dashboard extends JFrame implements ActionListener {
         welcomeLabel.setBounds(25, 18, 350, 30);
         headerPanel.add(welcomeLabel);
 
-        subtitleLabel = new JLabel("Manage the election system from here.");
+        subtitleLabel = new JLabel(
+                "Manage the election system from here.");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 13));
         subtitleLabel.setForeground(Color.GRAY);
         subtitleLabel.setBounds(25, 50, 400, 25);
         headerPanel.add(subtitleLabel);
 
-        createCard("Total Voters", "12", "●", blue, 25, 120);
+        // Dashboard Cards
+        createCard("Total Voters", "12", "●",
+                blue, 25, 120);
 
-        createCard("Total Candidates", "3", "●", green, 385, 120);
+        createCard("Total Candidates", "3", "●",
+                green, 385, 120);
 
-        createCard("Total Votes Cast", "8", "✓", purple, 25, 305);
+        createCard("Total Votes Cast", "8", "✓",
+                purple, 25, 305);
 
-        createCard("Election Status", "Ongoing", "■", orange, 385, 305);
+        createCard("Election Status", "Ongoing", "■",
+                orange, 385, 305);
 
         contentPanel.revalidate();
         contentPanel.repaint();
     }
 
-    private void createCard(String title, String value, String symbol, Color cardColor, int x, int y) {
+    // Create Dashboard Card
+    private void createCard(String title, String value,
+            String symbol, Color cardColor, int x, int y) {
 
         JPanel card = new JPanel();
         card.setLayout(null);
@@ -154,6 +172,7 @@ public class Dashboard extends JFrame implements ActionListener {
         card.add(valueLabel);
     }
 
+    // Display Other Sections
     private void showSection(String title, String description) {
 
         contentPanel.removeAll();
@@ -174,6 +193,7 @@ public class Dashboard extends JFrame implements ActionListener {
         contentPanel.repaint();
     }
 
+    // Button Actions
     @Override
     public void actionPerformed(ActionEvent e) {
 
@@ -184,25 +204,27 @@ public class Dashboard extends JFrame implements ActionListener {
         } else if (e.getSource() == btnVoters) {
 
             contentPanel.removeAll();
-            VoterManagementPanel voters = new VoterManagementPanel();
+
+            VoterManagementPanel voters =
+                    new VoterManagementPanel();
+
             voters.setBounds(0, 0, 710, 600);
             contentPanel.add(voters);
+
             contentPanel.revalidate();
             contentPanel.repaint();
 
         } else if (e.getSource() == btnCandidates) {
 
             contentPanel.removeAll();
+
             CandidatePanel candidates = new CandidatePanel();
+
             candidates.setBounds(0, 0, 710, 600);
             contentPanel.add(candidates);
+
             contentPanel.revalidate();
             contentPanel.repaint();
-
-        } else if (e.getSource() == btnElection) {
-
-            showSection("Election Management",
-                    "Manage election settings and status here.");
 
         } else if (e.getSource() == btnRecords) {
 
@@ -224,6 +246,7 @@ public class Dashboard extends JFrame implements ActionListener {
             );
 
             if (choice == JOptionPane.YES_OPTION) {
+
                 LoginPanel login = new LoginPanel();
                 login.setVisible(true);
                 this.dispose();
@@ -237,3 +260,4 @@ public class Dashboard extends JFrame implements ActionListener {
         dashboard.setVisible(true);
     }
 }
+
