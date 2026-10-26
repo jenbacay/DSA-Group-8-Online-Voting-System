@@ -331,6 +331,3 @@ public class CandidatePanel extends JFrame
         }
     }
 }
-
-
-
