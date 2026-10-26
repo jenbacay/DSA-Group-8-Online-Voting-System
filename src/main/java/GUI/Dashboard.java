@@ -183,8 +183,12 @@ public class Dashboard extends JFrame implements ActionListener {
 
         } else if (e.getSource() == btnVoters) {
 
-            showSection("Voters",
-                    "Manage registered voters here.");
+            contentPanel.removeAll();
+            VoterManagementPanel voters = new VoterManagementPanel();
+            voters.setBounds(0, 0, 710, 600);
+            contentPanel.add(voters);
+            contentPanel.revalidate();
+            contentPanel.repaint();
 
         } else if (e.getSource() == btnCandidates) {
 
