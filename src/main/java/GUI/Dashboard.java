@@ -29,7 +29,7 @@ public class Dashboard extends JFrame implements ActionListener {
     private Color orange = new Color(245, 160, 20);
     private Color background = new Color(240, 246, 252);
 
-    Dashboard() {
+    public Dashboard() {
 
         setTitle("Admin Dashboard");
         setSize(900, 600);
@@ -188,8 +188,9 @@ public class Dashboard extends JFrame implements ActionListener {
 
         } else if (e.getSource() == btnCandidates) {
 
-            showSection("Candidates",
-                    "Add, edit, and manage candidates here.");
+            CandidatePanel candidates = new CandidatePanel();
+            candidates.setVisible(true);
+            this.dispose();
 
         } else if (e.getSource() == btnElection) {
 
