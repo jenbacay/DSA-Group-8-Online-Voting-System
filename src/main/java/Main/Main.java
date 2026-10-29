@@ -5,7 +5,6 @@
 package Main;
 
 import GUI.*;
-import GUI.LoginPanel;
 
 /**
  *
