@@ -390,6 +390,17 @@ public class CastVotePanel extends JFrame implements ActionListener {
                     JOptionPane.QUESTION_MESSAGE);
 
             if (choice == JOptionPane.YES_OPTION) {
+                    List<String> selectedCandidates = new java.util.ArrayList<>();
+                    selectedCandidates.add(
+                        "SK Chairperson: C001 - Maria Santos (Party List 1)");
+                    
+                    VotingConfirmation confirmation = new VotingConfirmation(
+                      voterName,
+                      voterID,
+                      selectedCandidates);
+
+                    confirmation.setVisible(true);
+                    this.dispose();
 
             }
 
