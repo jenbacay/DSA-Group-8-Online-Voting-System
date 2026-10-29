@@ -22,20 +22,12 @@ import java.util.List;
 public class VotingConfirmation extends JFrame
         implements ActionListener {
 
-    private JLabel titleLabel, subtitleLabel;
-    private JLabel successLabel, messageLabel;
-    private JLabel nameLabel, idLabel, dateLabel;
-    private JLabel nameValue, idValue;
-    private JLabel candidatesLabel;
-
-    private JPanel mainPanel, headerPanel;
-    private JPanel checkPanel, voterPanel, circle;
-
+    private JLabel titleLabel, subtitleLabel, successLabel, messageLabel, nameLabel, 
+            idLabel, dateLabel,nameValue, idValue, candidatesLabel;
+    private JPanel mainPanel, headerPanel,checkPanel, voterPanel, circle;
     private JTextArea candidatesArea;
     private JScrollPane candidateScrollPane;
-
     private JButton confirmButton;
-
     private Color green = new Color(24, 165, 100);
     private Color blue = new Color(18, 130, 220);
     private Color darkBlue = new Color(15, 61, 120);

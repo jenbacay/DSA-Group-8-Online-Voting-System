@@ -41,8 +41,7 @@ public class CastVotePanel extends JFrame implements ActionListener {
     private Color blue = new Color(18, 130, 220);
     private Color lightBlue = new Color(225, 242, 255);
     private Color borderColor = new Color(220, 225, 230);
-    private String voterName;
-    private String voterID;
+    private String voterName, voterID;
     private String[] positions = {
         "SK Chairperson",
         "SK Kagawad",
