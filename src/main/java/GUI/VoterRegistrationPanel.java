@@ -13,9 +13,7 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
 
     private JTextField fname, lname, user, email;
     private JPasswordField pass;
-
     private JLabel regis, name1, name2, user1, email1, pass1;
-
     private JButton sign, clear, backButton;
     private JPanel panel;
 
