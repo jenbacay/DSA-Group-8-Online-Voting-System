@@ -9,7 +9,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
@@ -18,17 +17,13 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
     private JLabel titleLabel, nameLabel, partyLabel;
     private JTextField nameField, partyField;
-
-    private JButton addButton, updateButton;
-    private JButton deleteButton, clearButton;
-
+    private JButton addButton, updateButton, deleteButton, clearButton;
     private JTable candidateTable;
     private DefaultTableModel tableModel;
-
     private final Color darkBlue = new Color(20, 55, 85);
     private final Color background = new Color(240, 246, 252);
     private final Color buttonColor = new Color(220, 233, 245);
-
+    
     public CandidatePanel() {
 
         setLayout(null);
