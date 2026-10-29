@@ -18,8 +18,7 @@ import javax.swing.border.LineBorder;
 public class VoterDashboard extends JFrame implements ActionListener {
 
     private JLabel titleLabel, subtitleLabel, welcomeLabel;
-    private JButton candidatesButton, voteButton;
-    private JButton resultsButton, logoutButton;
+    private JButton candidatesButton, voteButton, resultsButton, logoutButton;
 
     public VoterDashboard() {
 
