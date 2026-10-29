@@ -12,29 +12,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
-
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 
-public class VoterManagementPanel extends JPanel
-        implements ActionListener {
+public class VoterManagementPanel extends JPanel implements ActionListener {
 
-    private JLabel titleLabel;
-    private JLabel firstNameLabel, lastNameLabel;
-    private JLabel emailLabel, passwordLabel;
-
+    private JLabel titleLabel, firstNameLabel, lastNameLabel, emailLabel, passwordLabel;
     private JTextField firstNameField, lastNameField, emailField;
     private JPasswordField passwordField;
-
-    private JButton registerButton, updateButton;
-    private JButton deleteButton, clearButton;
-
+    private JButton registerButton, updateButton, deleteButton, clearButton;
     private JTable voterTable;
     private DefaultTableModel tableModel;
-
     private final Color darkBlue = new Color(20, 55, 85);
     private final Color background = new Color(240, 246, 252);
     private final Color buttonColor = new Color(220, 233, 245);
