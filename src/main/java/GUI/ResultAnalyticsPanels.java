@@ -89,8 +89,6 @@ public class ResultAnalyticsPanels extends JPanel
         "Sofia Aquino", "Tony Villanueva"
     };
 
-    // Each party list has:
-    // 1 Chairperson, 7 Kagawad, 1 Treasurer, 1 Secretary
     private String[] candidateParties = {
         "Party List 1", "Party List 2",
 
@@ -130,7 +128,6 @@ public class ResultAnalyticsPanels extends JPanel
         40, 38
     };
 
-    // Sample data for GUI testing
     private int totalRegisteredVoters = 100;
     private int totalVotersWhoVoted = 75;
 
@@ -154,10 +151,6 @@ public class ResultAnalyticsPanels extends JPanel
 
         cardLayout.show(this, "RESULTS");
     }
-
-    // ==========================================
-    // RESULTS PANEL
-    // ==========================================
 
     private void createResultsPanel() {
 
@@ -189,7 +182,7 @@ public class ResultAnalyticsPanels extends JPanel
         positionComboBox.addActionListener(this);
         resultsPanel.add(positionComboBox);
 
-        // Results summary
+    
         summaryPanel = new JPanel();
         summaryPanel.setLayout(null);
         summaryPanel.setBackground(Color.WHITE);
@@ -219,7 +212,7 @@ public class ResultAnalyticsPanels extends JPanel
         leadingCandidateLabel.setBounds(220, 32, 410, 20);
         summaryPanel.add(leadingCandidateLabel);
 
-        // Bar graph
+        
         barChartPanel = new JPanel() {
 
             @Override
@@ -322,7 +315,6 @@ public class ResultAnalyticsPanels extends JPanel
         barChartPanel.setBounds(20, 183, 315, 270);
         resultsPanel.add(barChartPanel);
 
-        // Candidate ranking panel
         rankingPanel = new JPanel();
         rankingPanel.setLayout(null);
         rankingPanel.setBackground(Color.WHITE);
@@ -364,7 +356,6 @@ public class ResultAnalyticsPanels extends JPanel
         rankingScrollPane.setBounds(5, 30, 313, 230);
         rankingPanel.add(rankingScrollPane);
 
-        // Refresh Results button
         refreshResultsButton = new JButton("REFRESH RESULTS");
         refreshResultsButton.setFont(new Font("Arial", Font.BOLD, 11));
         refreshResultsButton.setForeground(Color.WHITE);
@@ -374,7 +365,6 @@ public class ResultAnalyticsPanels extends JPanel
         refreshResultsButton.addActionListener(this);
         resultsPanel.add(refreshResultsButton);
 
-        // Show Analytics button
         showAnalyticsButton = new JButton("SHOW ANALYTICS");
         showAnalyticsButton.setFont(new Font("Arial", Font.BOLD, 11));
         showAnalyticsButton.setForeground(Color.WHITE);
@@ -385,10 +375,7 @@ public class ResultAnalyticsPanels extends JPanel
         resultsPanel.add(showAnalyticsButton);
     }
 
-    // ==========================================
-    // ANALYTICS PANEL
-    // ==========================================
-
+   
     private void createAnalyticsPanel() {
 
         analyticsPanel = new JPanel();
@@ -435,7 +422,7 @@ public class ResultAnalyticsPanels extends JPanel
                 analyticsSummaryPanel, "TURNOUT RATE",
                 String.format("%.2f%%", turnout), 430, 12);
 
-        // Pie graph
+  
         pieChartPanel = new JPanel() {
 
             @Override
@@ -521,7 +508,6 @@ public class ResultAnalyticsPanels extends JPanel
         pieChartPanel.setBounds(20, 180, 650, 270);
         analyticsPanel.add(pieChartPanel);
 
-        // Back to Results button
         backButton = new JButton("BACK TO RESULTS");
         backButton.setFont(new Font("Arial", Font.BOLD, 11));
         backButton.setForeground(darkBlue);
@@ -531,7 +517,6 @@ public class ResultAnalyticsPanels extends JPanel
         backButton.addActionListener(this);
         analyticsPanel.add(backButton);
 
-        // Refresh Analytics button
         refreshAnalyticsButton = new JButton("REFRESH ANALYTICS");
         refreshAnalyticsButton.setFont(new Font("Arial", Font.BOLD, 11));
         refreshAnalyticsButton.setForeground(Color.WHITE);
@@ -541,10 +526,6 @@ public class ResultAnalyticsPanels extends JPanel
         refreshAnalyticsButton.addActionListener(this);
         analyticsPanel.add(refreshAnalyticsButton);
     }
-
-    // ==========================================
-    // ANALYTICS SUMMARY LABELS
-    // ==========================================
 
     private void addAnalyticsValue(
             JPanel panel, String title, String value,
@@ -570,10 +551,6 @@ public class ResultAnalyticsPanels extends JPanel
             analyticsTurnoutLabel = valueLabel;
         }
     }
-
-    // ==========================================
-    // UPDATE RESULTS SUMMARY
-    // ==========================================
 
     private void updateResults() {
 
@@ -606,10 +583,6 @@ public class ResultAnalyticsPanels extends JPanel
         barChartPanel.repaint();
     }
 
-    // ==========================================
-    // POSITION-SPECIFIC RANKING WITH PARTY LIST
-    // ==========================================
-
     private void updateRankings() {
 
         rankingModel.setRowCount(0);
@@ -619,7 +592,6 @@ public class ResultAnalyticsPanels extends JPanel
 
         int count = 0;
 
-        // Count candidates for the selected position
         for (int i = 0; i < candidatePositions.length; i++) {
             if (candidatePositions[i].equals(selectedPosition)) {
                 count++;
@@ -629,7 +601,7 @@ public class ResultAnalyticsPanels extends JPanel
         int[] indexes = new int[count];
         int index = 0;
 
-        // Store only matching candidate indexes
+
         for (int i = 0; i < candidatePositions.length; i++) {
             if (candidatePositions[i].equals(selectedPosition)) {
                 indexes[index] = i;
@@ -637,7 +609,7 @@ public class ResultAnalyticsPanels extends JPanel
             }
         }
 
-        // Bubble Sort: highest votes to lowest
+     
         for (int i = 0; i < count - 1; i++) {
 
             for (int j = 0; j < count - i - 1; j++) {
@@ -652,7 +624,7 @@ public class ResultAnalyticsPanels extends JPanel
             }
         }
 
-        // Display rank, ID, name, party list, and votes
+      
         for (int i = 0; i < count; i++) {
 
             int candidateIndex = indexes[i];
@@ -669,11 +641,7 @@ public class ResultAnalyticsPanels extends JPanel
         rankingTitleLabel.setText(
                 "RANKINGS - " + selectedPosition.toUpperCase());
     }
-
-    // ==========================================
-    // UPDATE ANALYTICS
-    // ==========================================
-
+    
     private void updateAnalytics() {
 
         analyticsVotersLabel.setText(
@@ -694,10 +662,6 @@ public class ResultAnalyticsPanels extends JPanel
 
         pieChartPanel.repaint();
     }
-
-    // ==========================================
-    // BUTTON ACTIONS
-    // ==========================================
 
     @Override
     public void actionPerformed(ActionEvent e) {
