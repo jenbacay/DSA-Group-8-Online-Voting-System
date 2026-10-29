@@ -188,32 +188,31 @@ public class AdminDashboard extends JFrame implements ActionListener {
 
         } else if (e.getSource() == btnVoters) {
 
-            contentPanel.removeAll();
-
-            VoterManagementPanel voters =
-                    new VoterManagementPanel();
-
+            VoterManagementPanel voters = new VoterManagementPanel();
             voters.setBounds(0, 0, 710, 600);
+            contentPanel.removeAll();
             contentPanel.add(voters);
-
             contentPanel.revalidate();
             contentPanel.repaint();
 
         } else if (e.getSource() == btnCandidates) {
 
-            contentPanel.removeAll();
-
             CandidatePanel candidates = new CandidatePanel();
-
             candidates.setBounds(0, 0, 710, 600);
+            contentPanel.removeAll();
             contentPanel.add(candidates);
-
             contentPanel.revalidate();
             contentPanel.repaint();
 
         } else if (e.getSource() == btnRecords) {
 
-
+            VoteRecordsPanel votesrecords = new VoteRecordsPanel();            
+            votesrecords.setBounds(0, 0, 710, 600);
+            contentPanel.removeAll();
+            contentPanel.add(votesrecords);
+            contentPanel.revalidate();
+            contentPanel.repaint();
+            
         } else if (e.getSource() == btnResults) {
 
             ResultAnalyticsPanels results = new ResultAnalyticsPanels();
