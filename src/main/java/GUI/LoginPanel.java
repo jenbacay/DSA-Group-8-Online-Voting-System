@@ -23,8 +23,7 @@ import javax.swing.border.LineBorder;
 
 public class LoginPanel extends JFrame implements ActionListener {
 
-    private JLabel titleLabel, subtitleLabel, loginAsLabel;
-    private JLabel usernameLabel, passwordLabel, footerLabel;
+    private JLabel titleLabel, subtitleLabel, loginAsLabel, usernameLabel, passwordLabel, footerLabel;
     private JRadioButton voterRadioButton, adminRadioButton;
     private JTextField usernameField;
     private JPasswordField passwordField;
