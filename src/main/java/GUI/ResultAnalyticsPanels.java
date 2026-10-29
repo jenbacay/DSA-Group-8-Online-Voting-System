@@ -10,7 +10,6 @@ package GUI;
  */
 import javax.swing.*;
 import java.awt.*;
-
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -24,36 +23,16 @@ import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 
-public class ResultAnalyticsPanels extends JPanel
-        implements ActionListener {
+public class ResultAnalyticsPanels extends JPanel implements ActionListener {
 
     private CardLayout cardLayout;
-
-    private JPanel resultsPanel;
-    private JPanel analyticsPanel;
-    private JPanel barChartPanel;
-    private JPanel pieChartPanel;
-
-    private JPanel summaryPanel;
-    private JPanel rankingPanel;
-
+    private JPanel resultsPanel, analyticsPanel, barChartPanel, pieChartPanel; 
+    private JPanel summaryPanel, rankingPanel;   
     private JComboBox<String> positionComboBox;
-
-    private JLabel summaryVotesLabel;
-    private JLabel leadingCandidateLabel;
-    private JLabel analyticsVotersLabel;
-    private JLabel analyticsVotesLabel;
-    private JLabel analyticsTurnoutLabel;
-    private JLabel rankingTitleLabel;
-
+    private JLabel summaryVotesLabel,leadingCandidateLabel, analyticsVotersLabel, analyticsVotesLabel, analyticsTurnoutLabel, rankingTitleLabel;
     private JTable rankingTable;
     private DefaultTableModel rankingModel;
-
-    private JButton showAnalyticsButton;
-    private JButton backButton;
-    private JButton refreshResultsButton;
-    private JButton refreshAnalyticsButton;
-
+    private JButton showAnalyticsButton, backButton,refreshResultsButton, refreshAnalyticsButton;
     private Color darkBlue = new Color(25, 75, 125);
     private Color blue = new Color(40, 125, 220);
     private Color green = new Color(35, 165, 100);
