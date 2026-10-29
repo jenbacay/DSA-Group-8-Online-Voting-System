@@ -189,7 +189,7 @@ public class LoginPanel extends JFrame implements ActionListener {
                                 "Welcome, " + fullName + "!");
 
                         if ("ADMIN".equals(role)) {
-                            Dashboard dashboard = new Dashboard();
+                            AdminDashboard dashboard = new AdminDashboard();
                             dashboard.setVisible(true);
                             this.dispose();
 
