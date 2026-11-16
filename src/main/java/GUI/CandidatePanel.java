@@ -16,25 +16,13 @@ import javax.swing.table.DefaultTableModel;
 
 public class CandidatePanel extends JPanel implements ActionListener {
 
-    private JLabel titleLabel;
-    private JLabel nameLabel;
-    private JLabel partyLabel;
-    private JLabel positionLabel;
-
-    private JTextField nameField;
-    private JTextField partyField;
+    private JLabel titleLabel, nameLabel, partyLabel, positionLabel;
+    private JTextField nameField, partyField;
     private JComboBox<String> positionComboBox;
-
-    private JButton addButton;
-    private JButton updateButton;
-    private JButton deleteButton;
-    private JButton clearButton;
-
+    private JButton addButton, updateButton, deleteButton, clearButton;
     private JTable candidateTable;
     private DefaultTableModel tableModel;
-
     private int selectedCandidateId = -1;
-
     private Color darkBlue = new Color(20, 55, 85);
     private Color backgroundColor = new Color(240, 246, 252);
     private Color buttonColor = new Color(220, 233, 245);
@@ -83,7 +71,7 @@ public class CandidatePanel extends JPanel implements ActionListener {
         positionComboBox.setFont(new Font("Arial", Font.PLAIN, 13));
         add(positionComboBox);
 
-        // Buttons
+        
         addButton = createButton("Add");
         addButton.setBounds(25, 165, 90, 32);
         addButton.addActionListener(this);
@@ -160,7 +148,7 @@ public class CandidatePanel extends JPanel implements ActionListener {
     private JLabel createLabel(String text) {
 
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", Font.PLAIN, 13));
+        label.setFont(new Font("Arial", Font.BOLD, 12));
         label.setForeground(darkBlue);
 
         return label;
