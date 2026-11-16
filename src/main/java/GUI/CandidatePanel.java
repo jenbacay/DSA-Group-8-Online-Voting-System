@@ -457,6 +457,3 @@ public class CandidatePanel extends JPanel implements ActionListener {
         }
     }
 }
-
-
-
