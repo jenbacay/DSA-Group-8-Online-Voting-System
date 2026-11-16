@@ -38,6 +38,7 @@ public class LoginPanel extends JFrame implements ActionListener {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
+
         getContentPane().setBackground(new Color(230, 242, 255));
 
         JPanel mainPanel = new JPanel();
@@ -79,6 +80,7 @@ public class LoginPanel extends JFrame implements ActionListener {
         accountTypeGroup = new ButtonGroup();
         accountTypeGroup.add(voterRadioButton);
         accountTypeGroup.add(adminRadioButton);
+
         voterRadioButton.setSelected(true);
 
         usernameLabel = new JLabel("Username / Voter ID");
@@ -137,91 +139,129 @@ public class LoginPanel extends JFrame implements ActionListener {
 
         if (e.getSource() == loginButton) {
 
-        String username = usernameField.getText().trim();
-        String password = new String(passwordField.getPassword());
-        String role = "";
+            String username = usernameField.getText().trim();
+            String password = new String(
+                    passwordField.getPassword());
 
-        if (adminRadioButton.isSelected()) {
-            role = "ADMIN";
-        } else if (voterRadioButton.isSelected()) {
-            role = "VOTER";
-        }
+            String role = "";
 
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter your username and password.");
-            return;
-        }
+            if (adminRadioButton.isSelected()) {
+                role = "ADMIN";
+            } else if (voterRadioButton.isSelected()) {
+                role = "VOTER";
+            }
 
-        if (role.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please select an account type.");
-            return;
-        }
+            // CHECK EMPTY FIELDS
+            if (username.isEmpty() || password.isEmpty()) {
 
-        String sql = "SELECT account_id, full_name, role "
-                   + "FROM accounts "
-                   + "WHERE username = ? "
-                   + "AND password_hash = SHA2(?, 256) "
-                   + "AND role = ?";
-
-        try (Connection con = DBConnection.getConnection()) {
-
-            if (con == null) {
-                JOptionPane.showMessageDialog(
-                        this, "Database connection failed.");
+                JOptionPane.showMessageDialog(this,
+                        "Please enter your username and password.");
                 return;
             }
 
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
+            if (role.isEmpty()) {
 
-                ps.setString(1, username);
-                ps.setString(2, password);
-                ps.setString(3, role);
-
-                try (ResultSet rs = ps.executeQuery()) {
-
-                    if (rs.next()) {
-
-                        String fullName = rs.getString("full_name");
-
-                        JOptionPane.showMessageDialog(
-                                this,
-                                "Welcome, " + fullName + "!");
-
-                        if ("ADMIN".equals(role)) {
-                            AdminDashboard dashboard = new AdminDashboard();
-                            dashboard.setVisible(true);
-                            this.dispose();
-
-                        } else {
-                            JOptionPane.showMessageDialog(
-                                    this,
-                                    "Voter login is verified, "
-                                    + "but the voter dashboard "
-                                    + "is not connected yet.");
-                        }
-
-                    } else {
-                        JOptionPane.showMessageDialog(
-                                this,
-                                "Invalid username, password, "
-                                + "or account type.");
-                    }
-                }
+                JOptionPane.showMessageDialog(this,
+                        "Please select an account type.");
+                return;
             }
 
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Login error: " + ex.getMessage());
+            // LOGIN SQL
+            String sql = "SELECT a.account_id, a.full_name, a.role "
+                    + "FROM accounts a "
+                    + "LEFT JOIN voters v "
+                    + "ON a.account_id = v.account_id "
+                    + "WHERE (a.username = ? OR v.voter_id = ?) "
+                    + "AND a.password_hash = SHA2(?, 256) "
+                    + "AND a.role = ?";
+
+            try (Connection con = DBConnection.getConnection()) {
+
+                if (con == null) {
+
+                    JOptionPane.showMessageDialog(this,
+                            "Database connection failed.");
+                    return;
+                }
+
+                try (PreparedStatement ps =
+                        con.prepareStatement(sql)) {
+
+                    ps.setString(1, username);
+                    ps.setString(2, username);
+                    ps.setString(3, password);
+                    ps.setString(4, role);
+
+                    try (ResultSet rs = ps.executeQuery()) {
+
+                        if (rs.next()) {
+
+                            int accountId =
+                                    rs.getInt("account_id");
+
+                            String fullName =
+                                    rs.getString("full_name");
+
+                            JOptionPane.showMessageDialog(this,
+                                    "Welcome, " + fullName + "!");
+
+                            if ("ADMIN".equals(role)) {
+
+                                AdminDashboard dashboard = new AdminDashboard();
+                                dashboard.setVisible(true);
+                                this.dispose();
+
+                            } else {
+
+                                String voterId = "";
+
+                                String voterSQL =
+                                        "SELECT voter_id FROM voters "
+                                        + "WHERE account_id = ?";
+
+                                try (PreparedStatement voterPS =
+                                        con.prepareStatement(voterSQL)) {
+
+                                    voterPS.setInt(1, accountId);
+
+                                    try (ResultSet voterRS =
+                                            voterPS.executeQuery()) {
+
+                                        if (voterRS.next()) {
+                                            voterId = voterRS.getString(
+                                                    "voter_id");
+                                        }
+                                    }
+                                }
+
+                                if (voterId.isEmpty()) {
+                                    JOptionPane.showMessageDialog(this, "No voter profile found "
+                                            + "for this account.");
+
+                                    return;
+                                }
+
+                                VoterDashboard dashboard =new VoterDashboard();
+                                dashboard.setVisible(true);
+                                this.dispose();
+                            }
+
+                        } else {
+                                JOptionPane.showMessageDialog(this, "Invalid username, password, "
+                                    + "or account type.");
+                        }
+                    }
+                }
+
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this,"Login error: " + ex.getMessage());
+            }
+
+        } else if (e.getSource() == signUpButton) {
+
+            VoterRegistrationPanel registration = new VoterRegistrationPanel();
+            registration.setVisible(true);
+            this.dispose();
         }
-
-    } else if (e.getSource() == signUpButton) {
-
-        VoterRegistrationPanel registration =
-                new VoterRegistrationPanel();
-
-        registration.setVisible(true);
-        this.dispose();
     }
-}
 }

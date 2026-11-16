@@ -8,15 +8,21 @@ package Model;
  *
  * @author JenJen
  */
+
 public class Voter {
 
     private String voterId;
-    private String name;
+    private String firstName;
+    private String lastName;
+    private String email;
     private boolean registered;
 
-    public Voter(String voterId, String name, boolean registered) {
+    public Voter(String voterId, String firstName, String lastName, String email, boolean registered) {
+
         this.voterId = voterId;
-        this.name = name;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
         this.registered = registered;
     }
 
@@ -28,12 +34,28 @@ public class Voter {
         this.voterId = voterId;
     }
 
-    public String getName() {
-        return name;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public boolean isRegistered() {
