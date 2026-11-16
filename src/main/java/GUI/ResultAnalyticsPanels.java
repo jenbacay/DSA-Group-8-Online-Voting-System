@@ -1,38 +1,41 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package GUI;
 
-/**
- *
- * @author ronne
- */
-import javax.swing.*;
-import java.awt.*;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import Database.DBConnection;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ResultAnalyticsPanels extends JPanel implements ActionListener {
 
     private CardLayout cardLayout;
-    private JPanel resultsPanel, analyticsPanel, barChartPanel, pieChartPanel; 
-    private JPanel summaryPanel, rankingPanel;   
+
+    private JPanel resultsPanel, analyticsPanel;
+    private JPanel barChartPanel, pieChartPanel;
+    private JPanel summaryPanel, rankingPanel;
+
     private JComboBox<String> positionComboBox;
-    private JLabel summaryVotesLabel,leadingCandidateLabel, analyticsVotersLabel, analyticsVotesLabel, analyticsTurnoutLabel, rankingTitleLabel;
+
+    private JLabel summaryVotesLabel;
+    private JLabel leadingCandidateLabel;
+    private JLabel analyticsVotersLabel;
+    private JLabel analyticsVotesLabel;
+    private JLabel analyticsTurnoutLabel;
+    private JLabel rankingTitleLabel;
+
     private JTable rankingTable;
     private DefaultTableModel rankingModel;
-    private JButton showAnalyticsButton, backButton,refreshResultsButton, refreshAnalyticsButton;
+
+    private JButton showAnalyticsButton;
+    private JButton backButton;
+    private JButton refreshResultsButton;
+    private JButton refreshAnalyticsButton;
+
     private Color darkBlue = new Color(25, 75, 125);
     private Color blue = new Color(40, 125, 220);
     private Color green = new Color(35, 165, 100);
@@ -46,69 +49,10 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         "SK Secretary"
     };
 
-    private String[] candidateIDs = {
-        "C001", "C002",
-        "C003", "C004", "C005", "C006",
-        "C007", "C008", "C009", "C010",
-        "C011", "C012", "C013", "C014",
-        "C015", "C016", "C017", "C018",
-        "C019", "C020"
-    };
+    private List<String[]> candidateResults = new ArrayList<>();
 
-    private String[] candidateNames = {
-        "Ana Lopez", "Ben Santos",
-        "Carla Mendoza", "David Reyes",
-        "Ella Cruz", "Frank Garcia",
-        "Grace Flores", "Henry Ramos",
-        "Ivy Torres", "Jack Dela Cruz",
-        "Karen Diaz", "Leo Bautista",
-        "Mia Rivera", "Noah Castillo",
-        "Olivia Perez", "Paul Fernandez",
-        "Queenie Lim", "Ryan Gomez",
-        "Sofia Aquino", "Tony Villanueva"
-    };
-
-    private String[] candidateParties = {
-        "Party List 1", "Party List 2",
-
-        "Party List 1", "Party List 1",
-        "Party List 1", "Party List 1",
-        "Party List 1", "Party List 1",
-        "Party List 1", "Party List 1",
-
-        "Party List 2", "Party List 2",
-        "Party List 2", "Party List 2",
-        "Party List 2", "Party List 2",
-        "Party List 2", "Party List 2",
-
-        "Party List 1", "Party List 2"
-    };
-
-    private String[] candidatePositions = {
-        "SK Chairperson", "SK Chairperson",
-
-        "SK Kagawad", "SK Kagawad",
-        "SK Kagawad", "SK Kagawad",
-        "SK Kagawad", "SK Kagawad",
-        "SK Kagawad", "SK Kagawad",
-
-        "SK Kagawad", "SK Kagawad",
-        "SK Kagawad", "SK Kagawad",
-        "SK Kagawad", "SK Kagawad",
-
-        "SK Treasurer", "SK Treasurer",
-        "SK Secretary", "SK Secretary"
-    };
-
-    private int[] candidateVotes = {
-        65, 55,
-        35, 32, 30, 28, 25, 23, 21, 19,
-        18, 17, 16, 15, 14, 13, 12, 11,
-        40, 38
-    };
-
-    private int totalRegisteredVoters = 100;
-    private int totalVotersWhoVoted = 75;
+    private int totalRegisteredVoters = 0;
+    private int totalVotersWhoVoted = 0;
 
     public ResultAnalyticsPanels() {
 
@@ -124,12 +68,15 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         add(resultsPanel, "RESULTS");
         add(analyticsPanel, "ANALYTICS");
 
-        updateResults();
-        updateRankings();
+        loadResults();
         updateAnalytics();
 
         cardLayout.show(this, "RESULTS");
     }
+
+    // ==============================
+    // RESULTS PANEL
+    // ==============================
 
     private void createResultsPanel() {
 
@@ -144,7 +91,7 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         resultsPanel.add(titleLabel);
 
         JLabel subtitleLabel = new JLabel(
-                "Candidate votes and election results summary");
+            "Actual votes received by each candidate");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         subtitleLabel.setForeground(Color.GRAY);
         subtitleLabel.setBounds(20, 42, 550, 22);
@@ -161,7 +108,8 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         positionComboBox.addActionListener(this);
         resultsPanel.add(positionComboBox);
 
-    
+        // SUMMARY PANEL
+
         summaryPanel = new JPanel();
         summaryPanel.setLayout(null);
         summaryPanel.setBackground(Color.WHITE);
@@ -191,17 +139,21 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         leadingCandidateLabel.setBounds(220, 32, 410, 20);
         summaryPanel.add(leadingCandidateLabel);
 
-        
+        // BAR CHART
+
         barChartPanel = new JPanel() {
 
             @Override
             protected void paintComponent(Graphics g) {
+
                 super.paintComponent(g);
 
                 Graphics2D g2 = (Graphics2D) g;
+
                 g2.setRenderingHint(
-                        RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+                );
 
                 g2.setColor(Color.WHITE);
                 g2.fillRect(0, 0, getWidth(), getHeight());
@@ -210,61 +162,60 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
                 g2.setFont(new Font("Arial", Font.BOLD, 13));
                 g2.drawString("VOTES PER CANDIDATE", 12, 22);
 
-                String selectedPosition =
-                        (String) positionComboBox.getSelectedItem();
+                int chartLeft = 30;
+                int chartRight = getWidth() - 12;
+                int chartTop = 45;
+                int chartBottom = getHeight() - 35;
+                int chartHeight = chartBottom - chartTop;
 
                 int maxVotes = 1;
-                int count = 0;
 
-                for (int i = 0; i < candidateVotes.length; i++) {
-                    if (candidatePositions[i].equals(selectedPosition)) {
-                        count++;
+                for (String[] candidate : candidateResults) {
 
-                        if (candidateVotes[i] > maxVotes) {
-                            maxVotes = candidateVotes[i];
-                        }
+                    int votes = Integer.parseInt(candidate[4]);
+
+                    if (votes > maxVotes) {
+                        maxVotes = votes;
                     }
                 }
 
-                int chartLeft = 28;
-                int chartRight = getWidth() - 12;
-                int chartTop = 42;
-                int chartBottom = getHeight() - 30;
-                int chartHeight = chartBottom - chartTop;
-
                 for (int i = 0; i <= 4; i++) {
+
                     int y = chartTop + i * chartHeight / 4;
+
                     g2.setColor(new Color(225, 235, 245));
                     g2.drawLine(chartLeft, y, chartRight, y);
                 }
 
-                if (count == 0) {
+                if (candidateResults.isEmpty()) {
+
                     g2.setColor(Color.GRAY);
-                    g2.drawString("No results available.", 15, 65);
+                    g2.drawString("No candidate results available.", 15, 70);
                     return;
                 }
 
+                int count = candidateResults.size();
+
                 int slotWidth = (chartRight - chartLeft) / count;
+
                 int barWidth = Math.max(
-                        5, Math.min(20, slotWidth - 5));
+                    5, Math.min(20, slotWidth - 5)
+                );
 
                 int index = 0;
 
-                for (int i = 0; i < candidateVotes.length; i++) {
+                for (String[] candidate : candidateResults) {
 
-                    if (!candidatePositions[i].equals(selectedPosition)) {
-                        continue;
-                    }
+                    int votes = Integer.parseInt(candidate[4]);
 
-                    int barHeight = candidateVotes[i]
-                            * chartHeight / maxVotes;
+                    int barHeight = votes * chartHeight / maxVotes;
 
                     int x = chartLeft + index * slotWidth
-                            + (slotWidth - barWidth) / 2;
+                        + (slotWidth - barWidth) / 2;
 
                     int y = chartBottom - barHeight;
 
-                    if (candidateParties[i].equals("Party List 1")) {
+                    if (candidate[3].equalsIgnoreCase("Party List 1")) {
                         g2.setColor(blue);
                     } else {
                         g2.setColor(green);
@@ -274,14 +225,18 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
 
                     g2.setColor(darkBlue);
                     g2.setFont(new Font("Arial", Font.BOLD, 9));
+
                     g2.drawString(
-                            String.valueOf(candidateVotes[i]),
-                            x, Math.max(chartTop + 10, y - 3));
+                        String.valueOf(votes),
+                        x, Math.max(chartTop + 10, y - 3)
+                    );
 
                     g2.setFont(new Font("Arial", Font.PLAIN, 8));
+
                     g2.drawString(
-                            candidateIDs[i],
-                            x - 3, chartBottom + 15);
+                        candidate[0],
+                        x - 3, chartBottom + 15
+                    );
 
                     index++;
                 }
@@ -293,6 +248,8 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         barChartPanel.setBorder(new LineBorder(borderBlue, 1));
         barChartPanel.setBounds(20, 183, 315, 270);
         resultsPanel.add(barChartPanel);
+
+        // RANKING TABLE
 
         rankingPanel = new JPanel();
         rankingPanel.setLayout(null);
@@ -312,6 +269,7 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         };
 
         rankingModel = new DefaultTableModel(columns, 0) {
+
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -321,8 +279,11 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         rankingTable = new JTable(rankingModel);
         rankingTable.setFont(new Font("Arial", Font.PLAIN, 10));
         rankingTable.setRowHeight(22);
+
         rankingTable.getTableHeader().setFont(
-                new Font("Arial", Font.BOLD, 10));
+            new Font("Arial", Font.BOLD, 10)
+        );
+
         rankingTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
         rankingTable.getColumnModel().getColumn(0).setPreferredWidth(40);
@@ -334,6 +295,8 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         JScrollPane rankingScrollPane = new JScrollPane(rankingTable);
         rankingScrollPane.setBounds(5, 30, 313, 230);
         rankingPanel.add(rankingScrollPane);
+
+        // BUTTONS
 
         refreshResultsButton = new JButton("REFRESH RESULTS");
         refreshResultsButton.setFont(new Font("Arial", Font.BOLD, 11));
@@ -354,7 +317,113 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         resultsPanel.add(showAnalyticsButton);
     }
 
-   
+    // ==============================
+    // LOAD ACTUAL RESULTS FROM MYSQL
+    // ==============================
+
+    private void loadResults() {
+
+        candidateResults.clear();
+        rankingModel.setRowCount(0);
+
+        String selectedPosition =
+            (String) positionComboBox.getSelectedItem();
+
+        if (selectedPosition == null) {
+            return;
+        }
+
+        String sql =
+            "SELECT c.candidate_id, c.name, c.party, c.position, " +
+            "COUNT(v.vote_id) AS total_votes " +
+            "FROM candidates c " +
+            "LEFT JOIN votes v ON c.candidate_id = v.candidate_id " +
+            "WHERE c.position = ? " +
+            "GROUP BY c.candidate_id, c.name, c.party, c.position " +
+            "ORDER BY total_votes DESC, c.candidate_id ASC";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+
+            pst.setString(1, selectedPosition);
+
+            ResultSet rs = pst.executeQuery();
+
+            int rank = 1;
+            int totalPositionVotes = 0;
+            String leadingCandidate = "None";
+            int highestVotes = -1;
+
+            while (rs.next()) {
+
+                String candidateID = rs.getString("candidate_id");
+                String candidateName = rs.getString("name");
+                String party = rs.getString("party");
+                String position = rs.getString("position");
+
+                int votes = rs.getInt("total_votes");
+
+                totalPositionVotes += votes;
+
+                if (votes > highestVotes) {
+                    highestVotes = votes;
+                    leadingCandidate = candidateName;
+                }
+
+                String[] candidate = {
+                    candidateID,
+                    candidateName,
+                    position,
+                    party,
+                    String.valueOf(votes)
+                };
+
+                candidateResults.add(candidate);
+
+                rankingModel.addRow(new Object[]{
+                    rank,
+                    candidateID,
+                    candidateName,
+                    party,
+                    votes
+                });
+
+                rank++;
+            }
+
+            summaryVotesLabel.setText(totalPositionVotes + " votes");
+
+            if (highestVotes > 0) {
+                leadingCandidateLabel.setText(
+                    "Leading: " + leadingCandidate
+                );
+            } else {
+                leadingCandidateLabel.setText(
+                    "Leading candidate: No votes yet"
+                );
+            }
+
+            rankingTitleLabel.setText(
+                "RANKINGS - " + selectedPosition.toUpperCase()
+            );
+
+            barChartPanel.repaint();
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Unable to load election results.\n" + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    // ==============================
+    // ANALYTICS PANEL
+    // ==============================
+
     private void createAnalyticsPanel() {
 
         analyticsPanel = new JPanel();
@@ -368,7 +437,7 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         analyticsPanel.add(titleLabel);
 
         JLabel subtitleLabel = new JLabel(
-                "Voter participation and turnout overview");
+            "Voter participation and turnout overview");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         subtitleLabel.setForeground(Color.GRAY);
         subtitleLabel.setBounds(20, 42, 550, 22);
@@ -378,40 +447,50 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         analyticsSummaryPanel.setLayout(null);
         analyticsSummaryPanel.setBackground(Color.WHITE);
         analyticsSummaryPanel.setBorder(
-                new LineBorder(borderBlue, 1));
+            new LineBorder(borderBlue, 1)
+        );
         analyticsSummaryPanel.setBounds(20, 80, 650, 85);
         analyticsPanel.add(analyticsSummaryPanel);
 
         addAnalyticsValue(
-                analyticsSummaryPanel, "TOTAL VOTERS",
-                String.valueOf(totalRegisteredVoters), 10, 12);
+            analyticsSummaryPanel,
+            "TOTAL VOTERS",
+            "0",
+            10,
+            12
+        );
 
         addAnalyticsValue(
-                analyticsSummaryPanel, "TOTAL VOTES CAST",
-                String.valueOf(totalVotersWhoVoted), 220, 12);
-
-        double turnout = 0;
-
-        if (totalRegisteredVoters > 0) {
-            turnout = totalVotersWhoVoted * 100.0
-                    / totalRegisteredVoters;
-        }
+            analyticsSummaryPanel,
+            "TOTAL VOTERS WHO VOTED",
+            "0",
+            220,
+            12
+        );
 
         addAnalyticsValue(
-                analyticsSummaryPanel, "TURNOUT RATE",
-                String.format("%.2f%%", turnout), 430, 12);
+            analyticsSummaryPanel,
+            "TURNOUT RATE",
+            "0%",
+            430,
+            12
+        );
 
-  
+        // PIE CHART
+
         pieChartPanel = new JPanel() {
 
             @Override
             protected void paintComponent(Graphics g) {
+
                 super.paintComponent(g);
 
                 Graphics2D g2 = (Graphics2D) g;
+
                 g2.setRenderingHint(
-                        RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+                );
 
                 g2.setColor(Color.WHITE);
                 g2.fillRect(0, 0, getWidth(), getHeight());
@@ -421,36 +500,49 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
                 g2.drawString("VOTER TURNOUT", 15, 25);
 
                 int total = totalRegisteredVoters;
+
                 int voted = Math.min(
-                        totalRegisteredVoters,
-                        Math.max(0, totalVotersWhoVoted));
+                    total,
+                    Math.max(0, totalVotersWhoVoted)
+                );
 
                 int notVoted = Math.max(0, total - voted);
 
                 if (total <= 0) {
+
                     g2.setColor(Color.GRAY);
                     g2.drawString(
-                            "No voter data available.", 20, 60);
+                        "No registered voters available.",
+                        20, 60
+                    );
+
                     return;
                 }
 
                 int size = Math.min(205, getHeight() - 60);
+
                 int x = 45;
                 int y = 40;
 
                 int votedAngle = (int) Math.round(
-                        voted * 360.0 / total);
+                    voted * 360.0 / total
+                );
 
                 int notVotedAngle = 360 - votedAngle;
 
                 g2.setColor(green);
+
                 g2.fillArc(
-                        x, y, size, size, 90, -votedAngle);
+                    x, y, size, size,
+                    90, -votedAngle
+                );
 
                 g2.setColor(new Color(220, 230, 240));
+
                 g2.fillArc(
-                        x, y, size, size,
-                        90 - votedAngle, -notVotedAngle);
+                    x, y, size, size,
+                    90 - votedAngle, -notVotedAngle
+                );
 
                 int legendX = Math.max(x + size + 35, 280);
 
@@ -460,24 +552,30 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
                 g2.fillRect(legendX, 75, 16, 16);
 
                 g2.setColor(darkBlue);
+
                 g2.drawString(
-                        "Voters who voted: " + voted,
-                        legendX + 25, 88);
+                    "Voters who voted: " + voted,
+                    legendX + 25, 88
+                );
 
                 g2.setColor(new Color(220, 230, 240));
                 g2.fillRect(legendX, 115, 16, 16);
 
                 g2.setColor(darkBlue);
+
                 g2.drawString(
-                        "Voters who did not vote: " + notVoted,
-                        legendX + 25, 128);
+                    "Voters who did not vote: " + notVoted,
+                    legendX + 25, 128
+                );
 
                 double rate = voted * 100.0 / total;
 
                 g2.setFont(new Font("Arial", Font.BOLD, 15));
+
                 g2.drawString(
-                        String.format("Turnout: %.2f%%", rate),
-                        legendX, 170);
+                    String.format("Turnout: %.2f%%", rate),
+                    legendX, 170
+                );
             }
         };
 
@@ -486,6 +584,8 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         pieChartPanel.setBorder(new LineBorder(borderBlue, 1));
         pieChartPanel.setBounds(20, 180, 650, 270);
         analyticsPanel.add(pieChartPanel);
+
+        // BUTTONS
 
         backButton = new JButton("BACK TO RESULTS");
         backButton.setFont(new Font("Arial", Font.BOLD, 11));
@@ -506,9 +606,17 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         analyticsPanel.add(refreshAnalyticsButton);
     }
 
+    // ==============================
+    // ANALYTICS SUMMARY
+    // ==============================
+
     private void addAnalyticsValue(
-            JPanel panel, String title, String value,
-            int x, int y) {
+        JPanel panel,
+        String title,
+        String value,
+        int x,
+        int y
+    ) {
 
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(new Font("Arial", Font.PLAIN, 11));
@@ -524,131 +632,84 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
 
         if (title.equals("TOTAL VOTERS")) {
             analyticsVotersLabel = valueLabel;
-        } else if (title.equals("TOTAL VOTES CAST")) {
+        } else if (title.equals("TOTAL VOTERS WHO VOTED")) {
             analyticsVotesLabel = valueLabel;
         } else if (title.equals("TURNOUT RATE")) {
             analyticsTurnoutLabel = valueLabel;
         }
     }
 
-    private void updateResults() {
-
-        String selectedPosition =
-                (String) positionComboBox.getSelectedItem();
-
-        int totalPositionVotes = 0;
-        int highestVotes = -1;
-        String leadingCandidate = "None";
-
-        for (int i = 0; i < candidateVotes.length; i++) {
-
-            if (candidatePositions[i].equals(selectedPosition)) {
-
-                totalPositionVotes += candidateVotes[i];
-
-                if (candidateVotes[i] > highestVotes) {
-                    highestVotes = candidateVotes[i];
-                    leadingCandidate = candidateNames[i];
-                }
-            }
-        }
-
-        summaryVotesLabel.setText(
-                totalPositionVotes + " votes");
-
-        leadingCandidateLabel.setText(
-                "Leading: " + leadingCandidate);
-
-        barChartPanel.repaint();
-    }
-
-    private void updateRankings() {
-
-        rankingModel.setRowCount(0);
-
-        String selectedPosition =
-                (String) positionComboBox.getSelectedItem();
-
-        int count = 0;
-
-        for (int i = 0; i < candidatePositions.length; i++) {
-            if (candidatePositions[i].equals(selectedPosition)) {
-                count++;
-            }
-        }
-
-        int[] indexes = new int[count];
-        int index = 0;
-
-
-        for (int i = 0; i < candidatePositions.length; i++) {
-            if (candidatePositions[i].equals(selectedPosition)) {
-                indexes[index] = i;
-                index++;
-            }
-        }
-
-     
-        for (int i = 0; i < count - 1; i++) {
-
-            for (int j = 0; j < count - i - 1; j++) {
-
-                if (candidateVotes[indexes[j]]
-                        < candidateVotes[indexes[j + 1]]) {
-
-                    int temp = indexes[j];
-                    indexes[j] = indexes[j + 1];
-                    indexes[j + 1] = temp;
-                }
-            }
-        }
-
-      
-        for (int i = 0; i < count; i++) {
-
-            int candidateIndex = indexes[i];
-
-            rankingModel.addRow(new Object[]{
-                i + 1,
-                candidateIDs[candidateIndex],
-                candidateNames[candidateIndex],
-                candidateParties[candidateIndex],
-                candidateVotes[candidateIndex]
-            });
-        }
-
-        rankingTitleLabel.setText(
-                "RANKINGS - " + selectedPosition.toUpperCase());
-    }
-    
     private void updateAnalytics() {
 
-        analyticsVotersLabel.setText(
-                String.valueOf(totalRegisteredVoters));
+        String votersSQL =
+            "SELECT COUNT(*) AS total FROM voters";
 
-        analyticsVotesLabel.setText(
-                String.valueOf(totalVotersWhoVoted));
+        String votedSQL =
+            "SELECT COUNT(DISTINCT voter_id) AS total FROM votes";
 
-        double turnout = 0;
+        try (Connection con = DBConnection.getConnection()) {
 
-        if (totalRegisteredVoters > 0) {
-            turnout = totalVotersWhoVoted * 100.0
+            try (PreparedStatement pst =
+                    con.prepareStatement(votersSQL);
+                 ResultSet rs = pst.executeQuery()) {
+
+                if (rs.next()) {
+                    totalRegisteredVoters = rs.getInt("total");
+                }
+            }
+
+            try (PreparedStatement pst =
+                    con.prepareStatement(votedSQL);
+                 ResultSet rs = pst.executeQuery()) {
+
+                if (rs.next()) {
+                    totalVotersWhoVoted = rs.getInt("total");
+                }
+            }
+
+            double turnout = 0;
+
+            if (totalRegisteredVoters > 0) {
+
+                turnout = totalVotersWhoVoted * 100.0
                     / totalRegisteredVoters;
+            }
+
+            analyticsVotersLabel.setText(
+                String.valueOf(totalRegisteredVoters)
+            );
+
+            analyticsVotesLabel.setText(
+                String.valueOf(totalVotersWhoVoted)
+            );
+
+            analyticsTurnoutLabel.setText(
+                String.format("%.2f%%", turnout)
+            );
+
+            pieChartPanel.repaint();
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Unable to load election analytics.\n" + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
+            );
         }
-
-        analyticsTurnoutLabel.setText(
-                String.format("%.2f%%", turnout));
-
-        pieChartPanel.repaint();
     }
+
+    // ==============================
+    // ACTION LISTENER
+    // ==============================
 
     @Override
     public void actionPerformed(ActionEvent e) {
 
         if (e.getSource() == positionComboBox) {
 
-            updateResults();
-            updateRankings();
+            loadResults();
 
         } else if (e.getSource() == showAnalyticsButton) {
 
@@ -657,28 +718,29 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
 
         } else if (e.getSource() == backButton) {
 
-            updateResults();
-            updateRankings();
+            loadResults();
             cardLayout.show(this, "RESULTS");
 
         } else if (e.getSource() == refreshResultsButton) {
 
-            updateResults();
-            updateRankings();
+            loadResults();
 
             JOptionPane.showMessageDialog(
-                    this,
-                    "Results and rankings refreshed.");
+                this,
+                "Election results refreshed."
+            );
 
         } else if (e.getSource() == refreshAnalyticsButton) {
 
             updateAnalytics();
 
             JOptionPane.showMessageDialog(
-                    this,
-                    "Analytics refreshed.");
+                this,
+                "Election analytics refreshed."
+            );
         }
     }
 }
+
 
 
