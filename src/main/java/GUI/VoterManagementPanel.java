@@ -15,19 +15,11 @@ import javax.swing.table.DefaultTableModel;
 
 public class VoterManagementPanel extends JPanel implements ActionListener {
 
-    private JLabel titleLabel;
-    private JLabel firstNameLabel, lastNameLabel;
-    private JLabel usernameLabel, emailLabel;
-
-    private JTextField firstNameField, lastNameField;
-    private JTextField usernameField, emailField;
-
-    private JButton updateButton;
-    private JButton deleteButton, clearButton;
-
+    private JLabel titleLabel, firstNameLabel, lastNameLabel, usernameLabel, emailLabel;
+    private JTextField firstNameField, lastNameField, usernameField, emailField;
+    private JButton updateButton, deleteButton, clearButton;
     private JTable voterTable;
     private DefaultTableModel tableModel;
-
     private final Color darkBlue = new Color(20, 55, 85);
     private final Color background = new Color(240, 246, 252);
     private final Color buttonColor = new Color(220, 233, 245);
@@ -78,8 +70,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         voterTable = new JTable(tableModel);
         voterTable.setFont(new Font("Arial", Font.PLAIN, 12));
         voterTable.setRowHeight(24);
-        voterTable.setSelectionMode(
-                ListSelectionModel.SINGLE_SELECTION);
+        voterTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         voterTable.getTableHeader().setFont(
                 new Font("Arial", Font.BOLD, 11));
@@ -95,8 +86,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
         JScrollPane scrollPane = new JScrollPane(voterTable);
         scrollPane.setBounds(25, 205, 655, 320);
-        scrollPane.setBorder(
-                new LineBorder(new Color(125, 145, 165)));
+        scrollPane.setBorder(new LineBorder(new Color(125, 145, 165)));
 
         add(scrollPane);
 
