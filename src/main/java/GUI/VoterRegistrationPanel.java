@@ -182,9 +182,21 @@ public class VoterRegistrationPanel extends JFrame
         pass.addFocusListener(new FocusAdapter() {
 
             @Override
+            public void focusGained(FocusEvent e) {
+
+                if (pass.getForeground().equals(Color.GRAY)) {
+
+                    pass.setText("");
+                    pass.setEchoChar('\u2022');
+                    pass.setForeground(Color.BLACK);
+                }
+            }
+
+            @Override
             public void focusLost(FocusEvent e) {
 
                 if (pass.getPassword().length == 0) {
+
                     pass.setEchoChar((char) 0);
                     pass.setText("Password");
                     pass.setForeground(Color.GRAY);
@@ -230,7 +242,7 @@ public class VoterRegistrationPanel extends JFrame
                 || username.isEmpty() || username.equals("Username")
                 || emailAddress.isEmpty() || emailAddress.equals("Email")
                 || password.length == 0
-                || String.valueOf(password).equals("Password")) {
+                || (pass.getForeground().equals(Color.GRAY))) {
 
             JOptionPane.showMessageDialog(this,
                     "Please complete all fields.");
@@ -371,13 +383,13 @@ public class VoterRegistrationPanel extends JFrame
             lname.setText("Last Name");
             user.setText("Username");
             email.setText("Email");
-            pass.setText("Password");
 
             fname.setForeground(Color.GRAY);
             lname.setForeground(Color.GRAY);
             user.setForeground(Color.GRAY);
             email.setForeground(Color.GRAY);
 
+            pass.setText("Password");
             pass.setEchoChar((char) 0);
             pass.setForeground(Color.GRAY);
 
