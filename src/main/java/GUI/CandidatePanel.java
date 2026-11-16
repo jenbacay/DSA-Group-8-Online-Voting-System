@@ -15,102 +15,61 @@ import javax.swing.table.DefaultTableModel;
 
 public class CandidatePanel extends JPanel implements ActionListener {
 
-    private JLabel titleLabel;
-    private JLabel nameLabel;
-    private JLabel partyLabel;
-    private JLabel positionLabel;
-
-    private JTextField nameField;
-    private JTextField partyField;
-    private JComboBox<String> positionComboBox;
-
-    private JButton addButton;
-    private JButton updateButton;
-    private JButton deleteButton;
-    private JButton clearButton;
-
+    private JLabel titleLabel, nameLabel, partyLabel;
+    private JTextField nameField, partyField;
+    private JButton addButton, updateButton, deleteButton, clearButton;
     private JTable candidateTable;
     private DefaultTableModel tableModel;
-
-    private int selectedCandidateId = -1;
-
-    private Color darkBlue = new Color(20, 55, 85);
-    private Color backgroundColor = new Color(240, 246, 252);
-    private Color buttonColor = new Color(220, 233, 245);
-
+    private final Color darkBlue = new Color(20, 55, 85);
+    private final Color background = new Color(240, 246, 252);
+    private final Color buttonColor = new Color(220, 233, 245);
+    
     public CandidatePanel() {
 
         setLayout(null);
-        setBackground(backgroundColor);
+        setBackground(background);
 
         titleLabel = new JLabel("CANDIDATE MANAGEMENT");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        titleLabel.setBounds(25, 20, 650, 40);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 23));
         titleLabel.setForeground(darkBlue);
-        titleLabel.setBounds(25, 20, 400, 30);
         add(titleLabel);
 
-        nameLabel = createLabel("Candidate Name:");
-        nameLabel.setBounds(25, 75, 120, 25);
+        nameLabel = new JLabel("Candidate Name:");
+        nameLabel.setBounds(25, 85, 115, 25);
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        nameLabel.setForeground(darkBlue);
         add(nameLabel);
 
-        nameField = createTextField();
-        nameField.setBounds(140, 72, 180, 30);
+        nameField = new JTextField();
+        nameField.setBounds(140, 82, 180, 32);
+        nameField.setFont(new Font("Arial", Font.PLAIN, 13));
+        nameField.setBorder(new LineBorder(Color.GRAY));
         add(nameField);
 
-        partyLabel = createLabel("Partylist:");
-        partyLabel.setBounds(340, 75, 70, 25);
+        partyLabel = new JLabel("Party:");
+        partyLabel.setBounds(340, 85, 50, 25);
+        partyLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        partyLabel.setForeground(darkBlue);
         add(partyLabel);
 
-        partyField = createTextField();
-        partyField.setBounds(400, 72, 150, 30);
+        partyField = new JTextField();
+        partyField.setBounds(390, 82, 160, 32);
+        partyField.setFont(new Font("Arial", Font.PLAIN, 13));
+        partyField.setBorder(new LineBorder(Color.GRAY));
         add(partyField);
 
-        positionLabel = createLabel("Position:");
-        positionLabel.setBounds(25, 120, 100, 25);
-        add(positionLabel);
+        addButton = createButton("Add", 25);
+        updateButton = createButton("Update", 125);
+        deleteButton = createButton("Delete", 225);
+        clearButton = createButton("Clear", 325);
 
-        String[] positions = {
-            "Select Position",
-            "SK Chairperson",
-            "SK Kagawad",
-            "SK Treasurer",
-            "SK Secretary"
-        };
-
-        positionComboBox = new JComboBox<>(positions);
-        positionComboBox.setBounds(140, 117, 180, 32);
-        positionComboBox.setFont(new Font("Arial", Font.PLAIN, 13));
-        add(positionComboBox);
-
-        // Buttons
-        addButton = createButton("Add");
-        addButton.setBounds(25, 165, 90, 32);
-        addButton.addActionListener(this);
-        add(addButton);
-
-        updateButton = createButton("Update");
-        updateButton.setBounds(125, 165, 90, 32);
-        updateButton.addActionListener(this);
-        add(updateButton);
-
-        deleteButton = createButton("Delete");
-        deleteButton.setBounds(225, 165, 90, 32);
-        deleteButton.addActionListener(this);
-        add(deleteButton);
-
-        clearButton = createButton("Clear");
-        clearButton.setBounds(325, 165, 90, 32);
-        clearButton.addActionListener(this);
-        add(clearButton);
-
-        String[] columns = {
-            "Candidate ID",
-            "Candidate Name",
-            "Partylist",
-            "Position"
-        };
-
-        tableModel = new DefaultTableModel(columns, 0) {
+        tableModel = new DefaultTableModel(
+                new String[]{
+                    "Candidate ID",
+                    "Candidate Name",
+                    "Party"
+                }, 0) {
 
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -121,34 +80,41 @@ public class CandidatePanel extends JPanel implements ActionListener {
         candidateTable = new JTable(tableModel);
         candidateTable.setFont(new Font("Arial", Font.PLAIN, 12));
         candidateTable.setRowHeight(25);
+        candidateTable.setSelectionMode(
+                ListSelectionModel.SINGLE_SELECTION);
+
         candidateTable.getTableHeader().setFont(
                 new Font("Arial", Font.BOLD, 12));
-        candidateTable.getTableHeader().setBackground(darkBlue);
-        candidateTable.getTableHeader().setForeground(Color.WHITE);
+
+        candidateTable.getTableHeader().setReorderingAllowed(false);
 
         JScrollPane scrollPane = new JScrollPane(candidateTable);
-        scrollPane.setBounds(25, 215, 655, 320);
-        scrollPane.setBorder(new LineBorder(new Color(200, 210, 220)));
+        scrollPane.setBounds(25, 195, 655, 320);
+        scrollPane.setBorder(new LineBorder(
+                new Color(125, 145, 165)));
+
         add(scrollPane);
+
+        addButton.addActionListener(this);
+        updateButton.addActionListener(this);
+        deleteButton.addActionListener(this);
+        clearButton.addActionListener(this);
 
         candidateTable.getSelectionModel().addListSelectionListener(e -> {
 
             if (!e.getValueIsAdjusting()) {
+
                 int row = candidateTable.getSelectedRow();
 
-                if (row >= 0) {
-                    selectedCandidateId =
-                            Integer.parseInt(
-                                    tableModel.getValueAt(row, 0).toString());
+                if (row != -1) {
 
                     nameField.setText(
                             tableModel.getValueAt(row, 1).toString());
 
-                    partyField.setText(
-                            tableModel.getValueAt(row, 2).toString());
+                    Object party = tableModel.getValueAt(row, 2);
 
-                    positionComboBox.setSelectedItem(
-                            tableModel.getValueAt(row, 3).toString());
+                    partyField.setText(
+                            party == null ? "" : party.toString());
                 }
             }
         });
@@ -156,295 +122,273 @@ public class CandidatePanel extends JPanel implements ActionListener {
         loadCandidates();
     }
 
-    private JLabel createLabel(String text) {
-
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", Font.PLAIN, 13));
-        label.setForeground(darkBlue);
-
-        return label;
-    }
-
-    private JTextField createTextField() {
-
-        JTextField field = new JTextField();
-        field.setFont(new Font("Arial", Font.PLAIN, 13));
-        field.setBorder(new LineBorder(new Color(190, 205, 220)));
-
-        return field;
-    }
-
-    private JButton createButton(String text) {
+    private JButton createButton(String text, int x) {
 
         JButton button = new JButton(text);
+
+        button.setBounds(x, 135, 90, 35);
         button.setFont(new Font("Arial", Font.BOLD, 12));
-        button.setBackground(buttonColor);
         button.setForeground(darkBlue);
+        button.setBackground(buttonColor);
         button.setFocusPainted(false);
+        button.setBorder(new LineBorder(
+                new Color(150, 170, 190)));
+
+        add(button);
 
         return button;
     }
 
-    private int getPositionLimit(String position) {
+    private void loadCandidates() {
 
-        if (position.equals("SK Chairperson")
-                || position.equals("SK Treasurer")
-                || position.equals("SK Secretary")) {
+        tableModel.setRowCount(0);
 
-            return 1;
+        String sql = "SELECT candidate_id, name, party "
+                   + "FROM candidates ORDER BY candidate_id";
 
-        } else if (position.equals("SK Kagawad")) {
+        try (Connection con = DBConnection.getConnection()) {
 
-            return 7;
-        }
+            if (con == null) {
 
-        return 0;
-    }
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Could not connect to the database.",
+                        "Database Error",
+                        JOptionPane.ERROR_MESSAGE);
 
-    private int getCandidateCount(String party, String position,
-                                  int excludeCandidateId) {
-
-        String sql;
-
-        if (excludeCandidateId == -1) {
-            sql = "SELECT COUNT(*) FROM candidates "
-                    + "WHERE party = ? AND position = ?";
-        } else {
-            sql = "SELECT COUNT(*) FROM candidates "
-                    + "WHERE party = ? AND position = ? "
-                    + "AND candidate_id <> ?";
-        }
-
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement pst = con.prepareStatement(sql)) {
-
-            pst.setString(1, party);
-            pst.setString(2, position);
-
-            if (excludeCandidateId != -1) {
-                pst.setInt(3, excludeCandidateId);
+                return;
             }
 
-            try (ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement ps = con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
 
-                if (rs.next()) {
-                    return rs.getInt(1);
+                while (rs.next()) {
+
+                    tableModel.addRow(new Object[]{
+                        rs.getInt("candidate_id"),
+                        rs.getString("name"),
+                        rs.getString("party")
+                    });
                 }
             }
 
         } catch (SQLException e) {
 
-            JOptionPane.showMessageDialog(this,
-                    "Error checking candidate limit: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error loading candidates: " + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
-
-        return -1;
-    }
-
-    private boolean validateCandidate(int excludeCandidateId) {
-
-        String name = nameField.getText().trim();
-        String party = partyField.getText().trim();
-        String position = positionComboBox.getSelectedItem().toString();
-
-        if (name.isEmpty() || party.isEmpty()) {
-
-            JOptionPane.showMessageDialog(this,
-                    "Please enter the candidate name and partylist.");
-
-            return false;
-        }
-
-        if (position.equals("Select Position")) {
-
-            JOptionPane.showMessageDialog(this,
-                    "Please select a candidate position.");
-
-            return false;
-        }
-
-        int limit = getPositionLimit(position);
-
-        int currentCount = getCandidateCount(
-                party, position, excludeCandidateId);
-
-        if (currentCount == -1) {
-            return false;
-        }
-
-        if (currentCount >= limit) {
-
-            JOptionPane.showMessageDialog(this,
-                    "This partylist has already reached the maximum "
-                    + "number of candidates for " + position + ".\n\n"
-                    + "Maximum allowed: " + limit,
-                    "Candidate Limit Reached",
-                    JOptionPane.WARNING_MESSAGE);
-
-            return false;
-        }
-
-        return true;
     }
 
     private void addCandidate() {
 
-        if (!validateCandidate(-1)) {
+        String name = nameField.getText().trim();
+        String party = partyField.getText().trim();
+
+        if (name.isEmpty() || party.isEmpty()) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter the candidate name and party.",
+                    "Missing Information",
+                    JOptionPane.WARNING_MESSAGE);
+
             return;
         }
 
-        String sql = "INSERT INTO candidates (name, party, position) "
-                + "VALUES (?, ?, ?)";
+        String sql = "INSERT INTO candidates (name, party) "
+                   + "VALUES (?, ?)";
 
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement pst = con.prepareStatement(sql)) {
+        try (Connection con = DBConnection.getConnection()) {
 
-            pst.setString(1, nameField.getText().trim());
-            pst.setString(2, partyField.getText().trim());
-            pst.setString(3,
-                    positionComboBox.getSelectedItem().toString());
+            if (con == null) {
 
-            pst.executeUpdate();
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Could not connect to the database.");
 
-            JOptionPane.showMessageDialog(this,
-                    "Candidate added successfully!");
+                return;
+            }
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+
+                ps.setString(1, name);
+                ps.setString(2, party);
+
+                ps.executeUpdate();
+            }
+
+            JOptionPane.showMessageDialog(
+                    this, "Candidate added successfully!");
 
             clearFields();
             loadCandidates();
 
         } catch (SQLException e) {
 
-            JOptionPane.showMessageDialog(this,
-                    "Error adding candidate: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error adding candidate: " + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void updateCandidate() {
 
-        if (selectedCandidateId == -1) {
+        int row = candidateTable.getSelectedRow();
 
-            JOptionPane.showMessageDialog(this,
-                    "Please select a candidate from the table first.");
+        if (row == -1) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select a candidate from the table.",
+                    "No Candidate Selected",
+                    JOptionPane.WARNING_MESSAGE);
 
             return;
         }
 
-        if (!validateCandidate(selectedCandidateId)) {
+        String name = nameField.getText().trim();
+        String party = partyField.getText().trim();
+
+        if (name.isEmpty() || party.isEmpty()) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter the candidate name and party.");
+
             return;
         }
 
-        String sql = "UPDATE candidates SET name = ?, party = ?, "
-                + "position = ? WHERE candidate_id = ?";
+        int candidateId = Integer.parseInt(
+                tableModel.getValueAt(row, 0).toString());
 
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement pst = con.prepareStatement(sql)) {
+        String sql = "UPDATE candidates SET name = ?, party = ? "
+                   + "WHERE candidate_id = ?";
 
-            pst.setString(1, nameField.getText().trim());
-            pst.setString(2, partyField.getText().trim());
-            pst.setString(3,
-                    positionComboBox.getSelectedItem().toString());
-            pst.setInt(4, selectedCandidateId);
+        try (Connection con = DBConnection.getConnection()) {
 
-            pst.executeUpdate();
+            if (con == null) {
 
-            JOptionPane.showMessageDialog(this,
-                    "Candidate updated successfully!");
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Could not connect to the database.");
+
+                return;
+            }
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+
+                ps.setString(1, name);
+                ps.setString(2, party);
+                ps.setInt(3, candidateId);
+
+                int updated = ps.executeUpdate();
+
+                if (updated == 0) {
+
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Candidate not found. Please refresh the list.");
+
+                    loadCandidates();
+                    clearFields();
+                    return;
+                }
+            }
+
+            JOptionPane.showMessageDialog(
+                    this, "Candidate updated successfully!");
 
             clearFields();
             loadCandidates();
 
         } catch (SQLException e) {
 
-            JOptionPane.showMessageDialog(this,
-                    "Error updating candidate: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error updating candidate: " + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void deleteCandidate() {
 
-        if (selectedCandidateId == -1) {
+        int row = candidateTable.getSelectedRow();
 
-            JOptionPane.showMessageDialog(this,
-                    "Please select a candidate from the table first.");
+        if (row == -1) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select a candidate from the table.",
+                    "No Candidate Selected",
+                    JOptionPane.WARNING_MESSAGE);
 
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(this,
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
                 "Are you sure you want to delete this candidate?",
                 "Confirm Delete",
-                JOptionPane.YES_NO_OPTION);
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
 
         if (confirm != JOptionPane.YES_OPTION) {
             return;
         }
 
+        int candidateId = Integer.parseInt(
+                tableModel.getValueAt(row, 0).toString());
+
         String sql = "DELETE FROM candidates WHERE candidate_id = ?";
 
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement pst = con.prepareStatement(sql)) {
+        try (Connection con = DBConnection.getConnection()) {
 
-            pst.setInt(1, selectedCandidateId);
+            if (con == null) {
 
-            pst.executeUpdate();
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Could not connect to the database.");
 
-            JOptionPane.showMessageDialog(this,
-                    "Candidate deleted successfully!");
+                return;
+            }
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+
+                ps.setInt(1, candidateId);
+                ps.executeUpdate();
+            }
+
+            JOptionPane.showMessageDialog(
+                    this, "Candidate deleted successfully!");
 
             clearFields();
             loadCandidates();
 
         } catch (SQLException e) {
 
-            JOptionPane.showMessageDialog(this,
-                    "Unable to delete candidate. The candidate may "
-                    + "already be connected to a vote record.\n\n"
-                    + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error deleting candidate: " + e.getMessage()
+                    + "\nCheck whether this candidate is already "
+                    + "linked to a vote.",
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
-    }
-
-    public void loadCandidates() {
-
-        tableModel.setRowCount(0);
-
-        String sql = "SELECT candidate_id, name, party, position "
-                + "FROM candidates ORDER BY party, position, candidate_id";
-
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement pst = con.prepareStatement(sql);
-             ResultSet rs = pst.executeQuery()) {
-
-            while (rs.next()) {
-
-                Object[] row = {
-                    rs.getInt("candidate_id"),
-                    rs.getString("name"),
-                    rs.getString("party"),
-                    rs.getString("position")
-                };
-
-                tableModel.addRow(row);
-            }
-
-        } catch (SQLException e) {
-
-            JOptionPane.showMessageDialog(this,
-                    "Error loading candidates: " + e.getMessage());
-        }
-    }
-
-    public void refreshCandidates() {
-        loadCandidates();
     }
 
     private void clearFields() {
 
         nameField.setText("");
         partyField.setText("");
-        positionComboBox.setSelectedIndex(0);
 
-        selectedCandidateId = -1;
         candidateTable.clearSelection();
+        nameField.requestFocusInWindow();
     }
 
     @Override
@@ -468,6 +412,5 @@ public class CandidatePanel extends JPanel implements ActionListener {
         }
     }
 }
-
 
 
