@@ -25,7 +25,6 @@ public class VoterRegistrationPanel extends JFrame
     private JLabel user1, email1, pass1;
 
     private JButton sign, clear, backButton;
-
     private JPanel panel;
 
     public VoterRegistrationPanel() {
@@ -158,7 +157,6 @@ public class VoterRegistrationPanel extends JFrame
             public void focusGained(FocusEvent e) {
 
                 if (field.getText().equals(text)) {
-
                     field.setText("");
                     field.setForeground(Color.BLACK);
                 }
@@ -168,7 +166,6 @@ public class VoterRegistrationPanel extends JFrame
             public void focusLost(FocusEvent e) {
 
                 if (field.getText().isEmpty()) {
-
                     field.setText(text);
                     field.setForeground(Color.GRAY);
                 }
@@ -185,22 +182,9 @@ public class VoterRegistrationPanel extends JFrame
         pass.addFocusListener(new FocusAdapter() {
 
             @Override
-            public void focusGained(FocusEvent e) {
-
-                if (String.valueOf(
-                        pass.getPassword()).equals("Password")) {
-
-                    pass.setText("");
-                    pass.setEchoChar('\u2022');
-                    pass.setForeground(Color.BLACK);
-                }
-            }
-
-            @Override
             public void focusLost(FocusEvent e) {
 
                 if (pass.getPassword().length == 0) {
-
                     pass.setEchoChar((char) 0);
                     pass.setText("Password");
                     pass.setForeground(Color.GRAY);
@@ -216,8 +200,7 @@ public class VoterRegistrationPanel extends JFrame
                 "SELECT COALESCE(MAX(CAST(SUBSTRING(voter_id, 2) "
                 + "AS UNSIGNED)), 0) + 1 AS next_id "
                 + "FROM voters "
-                + "WHERE voter_id REGEXP '^V[0-9]+$' "
-                + "FOR UPDATE";
+                + "WHERE voter_id REGEXP '^V[0-9]+$'";
 
         try (PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -293,7 +276,6 @@ public class VoterRegistrationPanel extends JFrame
 
                 JOptionPane.showMessageDialog(this,
                         "Database connection failed.");
-
                 return;
             }
 
@@ -316,11 +298,8 @@ public class VoterRegistrationPanel extends JFrame
                     try (ResultSet rs = ps.getGeneratedKeys()) {
 
                         if (rs.next()) {
-
                             accountId = rs.getInt(1);
-
                         } else {
-
                             throw new SQLException(
                                     "Unable to retrieve account ID.");
                         }
@@ -416,4 +395,6 @@ public class VoterRegistrationPanel extends JFrame
         }
     }
 }
+
+
 
