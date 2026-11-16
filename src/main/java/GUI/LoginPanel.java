@@ -140,8 +140,7 @@ public class LoginPanel extends JFrame implements ActionListener {
         if (e.getSource() == loginButton) {
 
             String username = usernameField.getText().trim();
-            String password = new String(
-                    passwordField.getPassword());
+            String password = new String(passwordField.getPassword());
 
             String role = "";
 
