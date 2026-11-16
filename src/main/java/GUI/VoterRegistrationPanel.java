@@ -1,23 +1,34 @@
 package GUI;
 
+import Database.DBConnection;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 
-public class VoterRegistrationPanel extends JFrame implements ActionListener {
+public class VoterRegistrationPanel extends JFrame
+        implements ActionListener {
 
     private JTextField fname, lname, user, email;
     private JPasswordField pass;
-    private JLabel regis, name1, name2, user1, email1, pass1;
+
+    private JLabel regis, name1, name2;
+    private JLabel user1, email1, pass1;
+
     private JButton sign, clear, backButton;
+
     private JPanel panel;
 
-    VoterRegistrationPanel() {
+    public VoterRegistrationPanel() {
 
         setTitle("Online Voting System");
         setSize(500, 600);
@@ -25,6 +36,7 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
+
         getContentPane().setBackground(
                 new Color(230, 242, 255));
 
@@ -64,7 +76,7 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
         styleField(lname);
         placeholder(lname, "Last Name");
         panel.add(lname);
-
+  
         user1 = new JLabel("Username:");
         user1.setBounds(35, 205, 100, 30);
         user1.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -86,7 +98,7 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
         styleField(email);
         placeholder(email, "Email");
         panel.add(email);
-
+        
         pass1 = new JLabel("Password:");
         pass1.setBounds(35, 315, 100, 30);
         pass1.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -105,7 +117,7 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
         sign.setForeground(Color.WHITE);
         sign.setFocusPainted(false);
         panel.add(sign);
-
+        
         clear = new JButton("Clear");
         clear.setBounds(165, 385, 105, 40);
         clear.setFont(new Font("Arial", Font.BOLD, 14));
@@ -128,6 +140,7 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
     }
 
     private void styleField(JTextField field) {
+
         field.setFont(new Font("Arial", Font.PLAIN, 14));
         field.setBorder(new LineBorder(
                 new Color(190, 200, 213), 1));
@@ -143,7 +156,9 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
 
             @Override
             public void focusGained(FocusEvent e) {
+
                 if (field.getText().equals(text)) {
+
                     field.setText("");
                     field.setForeground(Color.BLACK);
                 }
@@ -151,7 +166,9 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
 
             @Override
             public void focusLost(FocusEvent e) {
+
                 if (field.getText().isEmpty()) {
+
                     field.setText(text);
                     field.setForeground(Color.GRAY);
                 }
@@ -169,8 +186,10 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
 
             @Override
             public void focusGained(FocusEvent e) {
+
                 if (String.valueOf(
                         pass.getPassword()).equals("Password")) {
+
                     pass.setText("");
                     pass.setEchoChar('\u2022');
                     pass.setForeground(Color.BLACK);
@@ -179,7 +198,9 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
 
             @Override
             public void focusLost(FocusEvent e) {
+
                 if (pass.getPassword().length == 0) {
+
                     pass.setEchoChar((char) 0);
                     pass.setText("Password");
                     pass.setForeground(Color.GRAY);
@@ -188,6 +209,153 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
         });
     }
 
+   
+    private void registerVoter() {
+
+        String firstName = fname.getText().trim();
+        String lastName = lname.getText().trim();
+        String username = user.getText().trim();
+        String emailAddress = email.getText().trim();
+        String password = new String(pass.getPassword());
+
+        
+        if (firstName.isEmpty() || firstName.equals("First Name")
+                || lastName.isEmpty() || lastName.equals("Last Name")
+                || username.isEmpty() || username.equals("Username")
+                || emailAddress.isEmpty() || emailAddress.equals("Email")
+                || password.isEmpty() || password.equals("Password")) {
+
+            JOptionPane.showMessageDialog(this,
+                    "Please complete all fields.");
+            return;
+        }
+
+       
+        if (!emailAddress.matches(
+                "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+
+            JOptionPane.showMessageDialog(this,
+                    "Please enter a valid email address.");
+            return;
+        }
+
+        
+        if (password.length() < 8) {
+
+            JOptionPane.showMessageDialog(this,
+                    "Password must contain at least 8 characters.");
+            return;
+        }
+
+        String fullName = firstName + " " + lastName;
+
+        String accountSQL =
+                "INSERT INTO accounts "
+                + "(full_name, username, email, password_hash, role) "
+                + "VALUES (?, ?, ?, SHA2(?, 256), 'VOTER')";
+
+        String voterSQL =
+                "INSERT INTO voters "
+                + "(voter_id, account_id, first_name, last_name, email, registered) "
+                + "VALUES (?, ?, ?, ?, ?, 1)";
+
+        try (Connection con = DBConnection.getConnection()) {
+
+            if (con == null) {
+
+                JOptionPane.showMessageDialog(this,
+                        "Database connection failed.");
+                return;
+            }
+
+            con.setAutoCommit(false);
+
+            try {
+
+                int accountId;
+
+                // INSERT ACCOUNT
+                try (PreparedStatement ps = con.prepareStatement(
+                        accountSQL, Statement.RETURN_GENERATED_KEYS)) {
+
+                    ps.setString(1, fullName);
+                    ps.setString(2, username);
+                    ps.setString(3, emailAddress);
+                    ps.setString(4, password);
+
+                    ps.executeUpdate();
+
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+
+                        if (rs.next()) {
+
+                            accountId = rs.getInt(1);
+
+                        } else {
+
+                            throw new SQLException(
+                                    "Unable to retrieve account ID.");
+                        }
+                    }
+                }
+
+                
+                String voterId = String.format(
+                        "V%03d", accountId);
+
+               
+                try (PreparedStatement ps =
+                        con.prepareStatement(voterSQL)) {
+
+                    ps.setString(1, voterId);
+                    ps.setInt(2, accountId);
+                    ps.setString(3, firstName);
+                    ps.setString(4, lastName);
+                    ps.setString(5, emailAddress);
+
+                    ps.executeUpdate();
+                }
+
+                
+                con.commit();
+
+                JOptionPane.showMessageDialog(this,
+                        "Registration successful!\n"
+                        + "Your Voter ID is: " + voterId
+                        + "\nYou can now log in.");
+
+                LoginPanel login = new LoginPanel();
+                login.setVisible(true);
+                this.dispose();
+
+            } catch (SQLException ex) {
+
+                con.rollback();
+
+                if ("23000".equals(ex.getSQLState())) {
+
+                    JOptionPane.showMessageDialog(this,
+                            "Username or email already exists.");
+
+                } else {
+
+                    JOptionPane.showMessageDialog(this,
+                            "Registration error: " + ex.getMessage());
+                }
+
+            } finally {
+
+                con.setAutoCommit(true);
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(this,
+                    "Database error: " + ex.getMessage());
+        }
+    }
+
+    
     @Override
     public void actionPerformed(ActionEvent e) {
 
@@ -211,40 +379,13 @@ public class VoterRegistrationPanel extends JFrame implements ActionListener {
 
         } else if (e.getSource() == sign) {
 
-            String firstName = fname.getText().trim();
-            String lastName = lname.getText().trim();
-            String username = user.getText().trim();
-            String emailAddress = email.getText().trim();
-            String password = new String(pass.getPassword());
-
-            if (firstName.isEmpty()
-                    || firstName.equals("First Name")
-                    || lastName.isEmpty()
-                    || lastName.equals("Last Name")
-                    || username.isEmpty()
-                    || username.equals("Username")
-                    || emailAddress.isEmpty()
-                    || emailAddress.equals("Email")
-                    || password.isEmpty()
-                    || password.equals("Password")) {
-
-                JOptionPane.showMessageDialog(
-                        this, "Please complete all fields.");
-
-            } else {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Registration button clicked. "
-                        + "Database saving is not connected yet.");
-            }
+            registerVoter();
 
         } else if (e.getSource() == backButton) {
 
             LoginPanel login = new LoginPanel();
             login.setVisible(true);
             this.dispose();
-
         }
     }
 }
