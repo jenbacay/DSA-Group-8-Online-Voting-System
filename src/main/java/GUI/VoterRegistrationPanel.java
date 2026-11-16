@@ -76,7 +76,7 @@ public class VoterRegistrationPanel extends JFrame
         styleField(lname);
         placeholder(lname, "Last Name");
         panel.add(lname);
-  
+
         user1 = new JLabel("Username:");
         user1.setBounds(35, 205, 100, 30);
         user1.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -98,7 +98,7 @@ public class VoterRegistrationPanel extends JFrame
         styleField(email);
         placeholder(email, "Email");
         panel.add(email);
-        
+
         pass1 = new JLabel("Password:");
         pass1.setBounds(35, 315, 100, 30);
         pass1.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -117,7 +117,7 @@ public class VoterRegistrationPanel extends JFrame
         sign.setForeground(Color.WHITE);
         sign.setFocusPainted(false);
         panel.add(sign);
-        
+
         clear = new JButton("Clear");
         clear.setBounds(165, 385, 105, 40);
         clear.setFont(new Font("Arial", Font.BOLD, 14));
@@ -209,41 +209,69 @@ public class VoterRegistrationPanel extends JFrame
         });
     }
 
-   
+    private String generateVoterID(Connection con)
+            throws SQLException {
+
+        String sql =
+                "SELECT COALESCE(MAX(CAST(SUBSTRING(voter_id, 2) "
+                + "AS UNSIGNED)), 0) + 1 AS next_id "
+                + "FROM voters "
+                + "WHERE voter_id REGEXP '^V[0-9]+$' "
+                + "FOR UPDATE";
+
+        try (PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+
+                int nextID = rs.getInt("next_id");
+
+                return String.format("V%03d", nextID);
+            }
+        }
+
+        throw new SQLException("Unable to generate voter ID.");
+    }
+
     private void registerVoter() {
 
         String firstName = fname.getText().trim();
         String lastName = lname.getText().trim();
         String username = user.getText().trim();
         String emailAddress = email.getText().trim();
-        String password = new String(pass.getPassword());
 
-        
+        char[] password = pass.getPassword();
+
         if (firstName.isEmpty() || firstName.equals("First Name")
                 || lastName.isEmpty() || lastName.equals("Last Name")
                 || username.isEmpty() || username.equals("Username")
                 || emailAddress.isEmpty() || emailAddress.equals("Email")
-                || password.isEmpty() || password.equals("Password")) {
+                || password.length == 0
+                || String.valueOf(password).equals("Password")) {
 
             JOptionPane.showMessageDialog(this,
                     "Please complete all fields.");
+
+            java.util.Arrays.fill(password, '\0');
             return;
         }
 
-       
         if (!emailAddress.matches(
                 "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
 
             JOptionPane.showMessageDialog(this,
                     "Please enter a valid email address.");
+
+            java.util.Arrays.fill(password, '\0');
             return;
         }
 
-        
-        if (password.length() < 8) {
+        if (password.length < 8) {
 
             JOptionPane.showMessageDialog(this,
                     "Password must contain at least 8 characters.");
+
+            java.util.Arrays.fill(password, '\0');
             return;
         }
 
@@ -265,6 +293,7 @@ public class VoterRegistrationPanel extends JFrame
 
                 JOptionPane.showMessageDialog(this,
                         "Database connection failed.");
+
                 return;
             }
 
@@ -274,14 +303,13 @@ public class VoterRegistrationPanel extends JFrame
 
                 int accountId;
 
-                // INSERT ACCOUNT
                 try (PreparedStatement ps = con.prepareStatement(
                         accountSQL, Statement.RETURN_GENERATED_KEYS)) {
 
                     ps.setString(1, fullName);
                     ps.setString(2, username);
                     ps.setString(3, emailAddress);
-                    ps.setString(4, password);
+                    ps.setString(4, new String(password));
 
                     ps.executeUpdate();
 
@@ -299,11 +327,8 @@ public class VoterRegistrationPanel extends JFrame
                     }
                 }
 
-                
-                String voterId = String.format(
-                        "V%03d", accountId);
+                String voterId = generateVoterID(con);
 
-               
                 try (PreparedStatement ps =
                         con.prepareStatement(voterSQL)) {
 
@@ -316,7 +341,6 @@ public class VoterRegistrationPanel extends JFrame
                     ps.executeUpdate();
                 }
 
-                
                 con.commit();
 
                 JOptionPane.showMessageDialog(this,
@@ -335,7 +359,7 @@ public class VoterRegistrationPanel extends JFrame
                 if ("23000".equals(ex.getSQLState())) {
 
                     JOptionPane.showMessageDialog(this,
-                            "Username or email already exists.");
+                            "Username, email, or voter ID already exists.");
 
                 } else {
 
@@ -352,28 +376,31 @@ public class VoterRegistrationPanel extends JFrame
 
             JOptionPane.showMessageDialog(this,
                     "Database error: " + ex.getMessage());
+
+        } finally {
+
+            java.util.Arrays.fill(password, '\0');
         }
     }
 
-    
     @Override
     public void actionPerformed(ActionEvent e) {
 
         if (e.getSource() == clear) {
 
-            fname.setText("");
-            lname.setText("");
-            user.setText("");
-            email.setText("");
-            pass.setText("");
+            fname.setText("First Name");
+            lname.setText("Last Name");
+            user.setText("Username");
+            email.setText("Email");
+            pass.setText("Password");
 
-            fname.setForeground(Color.BLACK);
-            lname.setForeground(Color.BLACK);
-            user.setForeground(Color.BLACK);
-            email.setForeground(Color.BLACK);
+            fname.setForeground(Color.GRAY);
+            lname.setForeground(Color.GRAY);
+            user.setForeground(Color.GRAY);
+            email.setForeground(Color.GRAY);
 
-            pass.setEchoChar('\u2022');
-            pass.setForeground(Color.BLACK);
+            pass.setEchoChar((char) 0);
+            pass.setForeground(Color.GRAY);
 
             fname.requestFocus();
 
@@ -389,3 +416,4 @@ public class VoterRegistrationPanel extends JFrame
         }
     }
 }
+
