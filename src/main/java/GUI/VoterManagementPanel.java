@@ -118,8 +118,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
                     emailField.setText(
                             tableModel.getValueAt(row, 3).toString());
-
-                    // Hindi ipinapakita o nilo-load ang password.
                     passwordField.setText("");
                 }
             }
