@@ -22,7 +22,9 @@ public class CandidatePanel extends JPanel implements ActionListener {
     private JButton addButton, updateButton, deleteButton, clearButton;
     private JTable candidateTable;
     private DefaultTableModel tableModel;
-    private int selectedCandidateId = -1;
+
+    private String selectedCandidateId = null;
+
     private Color darkBlue = new Color(20, 55, 85);
     private Color backgroundColor = new Color(240, 246, 252);
     private Color buttonColor = new Color(220, 233, 245);
@@ -71,7 +73,6 @@ public class CandidatePanel extends JPanel implements ActionListener {
         positionComboBox.setFont(new Font("Arial", Font.PLAIN, 13));
         add(positionComboBox);
 
-        
         addButton = createButton("Add");
         addButton.setBounds(25, 165, 90, 32);
         addButton.addActionListener(this);
@@ -110,25 +111,31 @@ public class CandidatePanel extends JPanel implements ActionListener {
         candidateTable = new JTable(tableModel);
         candidateTable.setFont(new Font("Arial", Font.PLAIN, 12));
         candidateTable.setRowHeight(25);
+
         candidateTable.getTableHeader().setFont(
                 new Font("Arial", Font.BOLD, 12));
+
         candidateTable.getTableHeader().setBackground(darkBlue);
         candidateTable.getTableHeader().setForeground(Color.WHITE);
 
         JScrollPane scrollPane = new JScrollPane(candidateTable);
         scrollPane.setBounds(25, 215, 655, 320);
-        scrollPane.setBorder(new LineBorder(new Color(200, 210, 220)));
+        scrollPane.setBorder(
+                new LineBorder(new Color(200, 210, 220)));
+
         add(scrollPane);
 
+        // Select candidate from table
         candidateTable.getSelectionModel().addListSelectionListener(e -> {
 
             if (!e.getValueIsAdjusting()) {
+
                 int row = candidateTable.getSelectedRow();
 
                 if (row >= 0) {
+
                     selectedCandidateId =
-                            Integer.parseInt(
-                                    tableModel.getValueAt(row, 0).toString());
+                            tableModel.getValueAt(row, 0).toString();
 
                     nameField.setText(
                             tableModel.getValueAt(row, 1).toString());
@@ -158,7 +165,8 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
         JTextField field = new JTextField();
         field.setFont(new Font("Arial", Font.PLAIN, 13));
-        field.setBorder(new LineBorder(new Color(190, 205, 220)));
+        field.setBorder(
+                new LineBorder(new Color(190, 205, 220)));
 
         return field;
     }
@@ -172,6 +180,32 @@ public class CandidatePanel extends JPanel implements ActionListener {
         button.setFocusPainted(false);
 
         return button;
+    }
+
+    private String generateCandidateID(Connection con)
+            throws SQLException {
+
+        String sql = "SELECT MAX(CAST(SUBSTRING(candidate_id, 2) "
+                   + "AS UNSIGNED)) AS last_id "
+                   + "FROM candidates "
+                   + "WHERE candidate_id REGEXP '^C[0-9]+$'";
+
+        try (PreparedStatement pst = con.prepareStatement(sql);
+             ResultSet rs = pst.executeQuery()) {
+
+            if (rs.next()) {
+
+                int lastID = rs.getInt("last_id");
+
+                if (rs.wasNull()) {
+                    lastID = 0;
+                }
+
+                return String.format("C%03d", lastID + 1);
+            }
+        }
+
+        return "C001";
     }
 
     private int getPositionLimit(String position) {
@@ -190,15 +224,20 @@ public class CandidatePanel extends JPanel implements ActionListener {
         return 0;
     }
 
-    private int getCandidateCount(String party, String position,
-                                  int excludeCandidateId) {
+    private int getCandidateCount(
+            String party,
+            String position,
+            String excludeCandidateId) {
 
         String sql;
 
-        if (excludeCandidateId == -1) {
+        if (excludeCandidateId == null) {
+
             sql = "SELECT COUNT(*) FROM candidates "
                     + "WHERE party = ? AND position = ?";
+
         } else {
+
             sql = "SELECT COUNT(*) FROM candidates "
                     + "WHERE party = ? AND position = ? "
                     + "AND candidate_id <> ?";
@@ -210,8 +249,8 @@ public class CandidatePanel extends JPanel implements ActionListener {
             pst.setString(1, party);
             pst.setString(2, position);
 
-            if (excludeCandidateId != -1) {
-                pst.setInt(3, excludeCandidateId);
+            if (excludeCandidateId != null) {
+                pst.setString(3, excludeCandidateId);
             }
 
             try (ResultSet rs = pst.executeQuery()) {
@@ -223,22 +262,26 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
         } catch (SQLException e) {
 
-            JOptionPane.showMessageDialog(this,
-                    "Error checking candidate limit: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error checking candidate limit: "
+                    + e.getMessage());
         }
 
         return -1;
     }
 
-    private boolean validateCandidate(int excludeCandidateId) {
+    private boolean validateCandidate(String excludeCandidateId) {
 
         String name = nameField.getText().trim();
         String party = partyField.getText().trim();
-        String position = positionComboBox.getSelectedItem().toString();
+        String position =
+                positionComboBox.getSelectedItem().toString();
 
         if (name.isEmpty() || party.isEmpty()) {
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Please enter the candidate name and partylist.");
 
             return false;
@@ -246,7 +289,8 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
         if (position.equals("Select Position")) {
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Please select a candidate position.");
 
             return false;
@@ -263,7 +307,8 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
         if (currentCount >= limit) {
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "This partylist has already reached the maximum "
                     + "number of candidates for " + position + ".\n\n"
                     + "Maximum allowed: " + limit,
@@ -278,41 +323,51 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
     private void addCandidate() {
 
-        if (!validateCandidate(-1)) {
+        if (!validateCandidate(null)) {
             return;
         }
 
-        String sql = "INSERT INTO candidates (name, party, position) "
-                + "VALUES (?, ?, ?)";
+        String sql = "INSERT INTO candidates "
+                   + "(candidate_id, name, party, position) "
+                   + "VALUES (?, ?, ?, ?)";
 
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement pst = con.prepareStatement(sql)) {
+        try (Connection con = DBConnection.getConnection()) {
 
-            pst.setString(1, nameField.getText().trim());
-            pst.setString(2, partyField.getText().trim());
-            pst.setString(3,
-                    positionComboBox.getSelectedItem().toString());
+            String candidateID = generateCandidateID(con);
 
-            pst.executeUpdate();
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
 
-            JOptionPane.showMessageDialog(this,
-                    "Candidate added successfully!");
+                pst.setString(1, candidateID);
+                pst.setString(2, nameField.getText().trim());
+                pst.setString(3, partyField.getText().trim());
+                pst.setString(4,
+                        positionComboBox.getSelectedItem().toString());
+
+                pst.executeUpdate();
+            }
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Candidate added successfully!\n\n"
+                    + "Candidate ID: " + candidateID);
 
             clearFields();
             loadCandidates();
 
         } catch (SQLException e) {
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Error adding candidate: " + e.getMessage());
         }
     }
 
     private void updateCandidate() {
 
-        if (selectedCandidateId == -1) {
+        if (selectedCandidateId == null) {
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Please select a candidate from the table first.");
 
             return;
@@ -322,8 +377,9 @@ public class CandidatePanel extends JPanel implements ActionListener {
             return;
         }
 
-        String sql = "UPDATE candidates SET name = ?, party = ?, "
-                + "position = ? WHERE candidate_id = ?";
+        String sql = "UPDATE candidates SET "
+                   + "name = ?, party = ?, position = ? "
+                   + "WHERE candidate_id = ?";
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement pst = con.prepareStatement(sql)) {
@@ -332,11 +388,12 @@ public class CandidatePanel extends JPanel implements ActionListener {
             pst.setString(2, partyField.getText().trim());
             pst.setString(3,
                     positionComboBox.getSelectedItem().toString());
-            pst.setInt(4, selectedCandidateId);
+            pst.setString(4, selectedCandidateId);
 
             pst.executeUpdate();
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Candidate updated successfully!");
 
             clearFields();
@@ -344,23 +401,27 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
         } catch (SQLException e) {
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Error updating candidate: " + e.getMessage());
         }
     }
 
     private void deleteCandidate() {
 
-        if (selectedCandidateId == -1) {
+        if (selectedCandidateId == null) {
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Please select a candidate from the table first.");
 
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to delete this candidate?",
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to delete candidate "
+                + selectedCandidateId + "?",
                 "Confirm Delete",
                 JOptionPane.YES_NO_OPTION);
 
@@ -373,11 +434,12 @@ public class CandidatePanel extends JPanel implements ActionListener {
         try (Connection con = DBConnection.getConnection();
              PreparedStatement pst = con.prepareStatement(sql)) {
 
-            pst.setInt(1, selectedCandidateId);
+            pst.setString(1, selectedCandidateId);
 
             pst.executeUpdate();
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Candidate deleted successfully!");
 
             clearFields();
@@ -385,9 +447,11 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
         } catch (SQLException e) {
 
-            JOptionPane.showMessageDialog(this,
-                    "Unable to delete candidate. The candidate may "
-                    + "already be connected to a vote record.\n\n"
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Unable to delete candidate.\n"
+                    + "The candidate may already be connected "
+                    + "to a vote record.\n\n"
                     + e.getMessage());
         }
     }
@@ -397,7 +461,8 @@ public class CandidatePanel extends JPanel implements ActionListener {
         tableModel.setRowCount(0);
 
         String sql = "SELECT candidate_id, name, party, position "
-                + "FROM candidates ORDER BY party, position, candidate_id";
+                   + "FROM candidates "
+                   + "ORDER BY party, position, candidate_id";
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement pst = con.prepareStatement(sql);
@@ -406,7 +471,7 @@ public class CandidatePanel extends JPanel implements ActionListener {
             while (rs.next()) {
 
                 Object[] row = {
-                    rs.getInt("candidate_id"),
+                    rs.getString("candidate_id"),
                     rs.getString("name"),
                     rs.getString("party"),
                     rs.getString("position")
@@ -417,7 +482,8 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
         } catch (SQLException e) {
 
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Error loading candidates: " + e.getMessage());
         }
     }
@@ -432,7 +498,8 @@ public class CandidatePanel extends JPanel implements ActionListener {
         partyField.setText("");
         positionComboBox.setSelectedIndex(0);
 
-        selectedCandidateId = -1;
+        selectedCandidateId = null;
+
         candidateTable.clearSelection();
     }
 
@@ -457,3 +524,6 @@ public class CandidatePanel extends JPanel implements ActionListener {
         }
     }
 }
+
+
+
