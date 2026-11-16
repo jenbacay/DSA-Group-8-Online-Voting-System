@@ -83,7 +83,7 @@ public class CandidatePanel extends JPanel implements ActionListener {
         positionComboBox.setFont(new Font("Arial", Font.PLAIN, 13));
         add(positionComboBox);
 
-        // Buttons
+        
         addButton = createButton("Add");
         addButton.setBounds(25, 165, 90, 32);
         addButton.addActionListener(this);
@@ -160,7 +160,7 @@ public class CandidatePanel extends JPanel implements ActionListener {
     private JLabel createLabel(String text) {
 
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", Font.PLAIN, 13));
+        label.setFont(new Font("Arial", Font.BOLD, 12));
         label.setForeground(darkBlue);
 
         return label;
