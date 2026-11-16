@@ -9,7 +9,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
@@ -18,13 +17,12 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
     private JLabel titleLabel;
     private JLabel firstNameLabel, lastNameLabel;
-    private JLabel usernameLabel, emailLabel, passwordLabel;
+    private JLabel usernameLabel, emailLabel;
 
     private JTextField firstNameField, lastNameField;
     private JTextField usernameField, emailField;
-    private JPasswordField passwordField;
 
-    private JButton registerButton, updateButton;
+    private JButton updateButton;
     private JButton deleteButton, clearButton;
 
     private JTable voterTable;
@@ -57,18 +55,9 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         emailLabel = createLabel("Email:", 350, 110, 100);
         emailField = createTextField(450, 107, 220);
 
-        passwordLabel = createLabel("Password:", 25, 155, 100);
-
-        passwordField = new JPasswordField();
-        passwordField.setBounds(125, 152, 190, 30);
-        passwordField.setFont(new Font("Arial", Font.PLAIN, 12));
-        passwordField.setBorder(new LineBorder(Color.GRAY));
-        add(passwordField);
-
-        registerButton = createButton("Register", 25);
-        updateButton = createButton("Update", 125);
-        deleteButton = createButton("Delete", 225);
-        clearButton = createButton("Clear", 325);
+        updateButton = createButton("Update", 25);
+        deleteButton = createButton("Delete", 125);
+        clearButton = createButton("Clear", 225);
 
         tableModel = new DefaultTableModel(
                 new String[]{
@@ -111,7 +100,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
         add(scrollPane);
 
-        registerButton.addActionListener(this);
         updateButton.addActionListener(this);
         deleteButton.addActionListener(this);
         clearButton.addActionListener(this);
@@ -135,8 +123,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
                     emailField.setText(
                             tableModel.getValueAt(row, 4).toString());
-
-                    passwordField.setText("");
                 }
             }
         });
@@ -173,7 +159,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
     private JButton createButton(String text, int x) {
 
         JButton button = new JButton(text);
-        button.setBounds(x, 190, 90, 35);
+        button.setBounds(x, 155, 90, 35);
         button.setFont(new Font("Arial", Font.BOLD, 12));
         button.setForeground(darkBlue);
         button.setBackground(buttonColor);
@@ -242,20 +228,14 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
         String sql = "SELECT COUNT(*) FROM voters "
                    + "WHERE LOWER(TRIM(first_name)) = LOWER(?) "
-                   + "AND LOWER(TRIM(last_name)) = LOWER(?) ";
-
-        if (currentVoterID != null) {
-            sql += "AND voter_id <> ?";
-        }
+                   + "AND LOWER(TRIM(last_name)) = LOWER(?) "
+                   + "AND voter_id <> ?";
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, firstName);
             ps.setString(2, lastName);
-
-            if (currentVoterID != null) {
-                ps.setString(3, currentVoterID);
-            }
+            ps.setString(3, currentVoterID);
 
             try (ResultSet rs = ps.executeQuery()) {
 
@@ -266,146 +246,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         }
 
         return false;
-    }
-
-    private void registerVoter() {
-
-        String firstName = firstNameField.getText().trim();
-        String lastName = lastNameField.getText().trim();
-        String username = usernameField.getText().trim();
-        String email = emailField.getText().trim();
-
-        char[] password = passwordField.getPassword();
-
-        if (firstName.isEmpty()
-                || lastName.isEmpty()
-                || username.isEmpty()
-                || email.isEmpty()
-                || password.length == 0) {
-
-            showWarning("Please complete all fields.");
-            return;
-        }
-
-        if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
-            showWarning("Please enter a valid email address.");
-            return;
-        }
-
-        if (password.length < 8) {
-            java.util.Arrays.fill(password, '\0');
-            showWarning("Password must contain at least 8 characters.");
-            return;
-        }
-
-        String fullName = firstName + " " + lastName;
-
-        String accountSQL =
-                "INSERT INTO accounts "
-                + "(full_name, username, email, password_hash, role) "
-                + "VALUES (?, ?, ?, SHA2(?, 256), 'VOTER')";
-
-        String voterSQL =
-                "INSERT INTO voters "
-                + "(voter_id, account_id, first_name, "
-                + "last_name, email, registered) "
-                + "VALUES (?, ?, ?, ?, ?, 1)";
-
-        try (Connection con = DBConnection.getConnection()) {
-
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
-
-            con.setAutoCommit(false);
-
-            try {
-
-                if (isDuplicateName(
-                        con, firstName, lastName, null)) {
-
-                    con.rollback();
-
-                    showWarning(
-                            "A voter with this first name and "
-                            + "last name is already registered.");
-
-                    return;
-                }
-
-                int accountID;
-
-                try (PreparedStatement ps = con.prepareStatement(
-                        accountSQL, Statement.RETURN_GENERATED_KEYS)) {
-
-                    ps.setString(1, fullName);
-                    ps.setString(2, username);
-                    ps.setString(3, email);
-                    ps.setString(4, new String(password));
-
-                    ps.executeUpdate();
-
-                    try (ResultSet keys = ps.getGeneratedKeys()) {
-
-                        if (!keys.next()) {
-                            throw new SQLException(
-                                    "Could not retrieve account ID.");
-                        }
-
-                        accountID = keys.getInt(1);
-                    }
-                }
-
-                String voterID = String.format("V%03d", accountID);
-
-                try (PreparedStatement ps = con.prepareStatement(voterSQL)) {
-
-                    ps.setString(1, voterID);
-                    ps.setInt(2, accountID);
-                    ps.setString(3, firstName);
-                    ps.setString(4, lastName);
-                    ps.setString(5, email);
-
-                    ps.executeUpdate();
-                }
-
-                con.commit();
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Voter registered successfully!\n"
-                        + "Voter ID: " + voterID,
-                        "Registration Successful",
-                        JOptionPane.INFORMATION_MESSAGE);
-
-                clearFields();
-                loadVoters();
-
-            } catch (SQLException e) {
-
-                con.rollback();
-
-                if ("23000".equals(e.getSQLState())) {
-                    showWarning(
-                            "Username, email, or voter details "
-                            + "may already exist. Please check "
-                            + "the information.");
-                } else {
-                    showError("Error registering voter: "
-                            + e.getMessage());
-                }
-
-            } finally {
-                con.setAutoCommit(true);
-            }
-
-        } catch (SQLException e) {
-            showError("Database error: " + e.getMessage());
-
-        } finally {
-            java.util.Arrays.fill(password, '\0');
-        }
     }
 
     private void updateVoter() {
@@ -541,7 +381,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
             showError("Database error: " + e.getMessage());
         }
     }
-
+    
     private void deleteVoter() {
 
         int row = voterTable.getSelectedRow();
@@ -613,7 +453,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         lastNameField.setText("");
         usernameField.setText("");
         emailField.setText("");
-        passwordField.setText("");
 
         voterTable.clearSelection();
 
@@ -641,11 +480,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
 
-        if (e.getSource() == registerButton) {
-
-            registerVoter();
-
-        } else if (e.getSource() == updateButton) {
+        if (e.getSource() == updateButton) {
 
             updateVoter();
 
@@ -659,3 +494,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         }
     }
 }
+
+
+
