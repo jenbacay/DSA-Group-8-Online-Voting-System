@@ -16,7 +16,8 @@ import javax.swing.table.DefaultTableModel;
 public class CandidatePanel extends JPanel implements ActionListener {
 
     private JLabel titleLabel, electionLabel, nameLabel, partyLabel, positionLabel;
-    private JComboBox<ElectionItem> electionComboBox, positionComboBox;
+    private JComboBox<ElectionItem> electionComboBox;
+    private JComboBox<PositionItem> positionComboBox;
     private JTextField nameField, partyField;
     private JButton addButton, updateButton, deleteButton, clearButton;
     private JTable candidateTable;
