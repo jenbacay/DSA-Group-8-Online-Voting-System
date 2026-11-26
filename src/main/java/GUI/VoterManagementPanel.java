@@ -75,10 +75,10 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         voterTable.setRowHeight(24);
         voterTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        voterTable.getTableHeader().setFont(
-                new Font("Arial", Font.BOLD, 11));
-
+        voterTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 11));
         voterTable.getTableHeader().setReorderingAllowed(false);
+        voterTable.getTableHeader().setBackground(darkBlue);
+        voterTable.getTableHeader().setForeground(Color.WHITE);
 
         voterTable.getColumnModel().getColumn(0).setPreferredWidth(65);
         voterTable.getColumnModel().getColumn(1).setPreferredWidth(95);
