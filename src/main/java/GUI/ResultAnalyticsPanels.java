@@ -26,7 +26,7 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
     private JTable rankingTable;
     private DefaultTableModel rankingModel;
 
-    private JButton showAnalyticsButton, backButton, refreshResultButton, refreshAnalyticsButton;
+    private JButton showAnalyticsButton, backButton, refreshResultsButton, refreshAnalyticsButton;
 
     private Color darkBlue = new Color(25, 75, 125);
     private Color blue = new Color(40, 125, 220);
