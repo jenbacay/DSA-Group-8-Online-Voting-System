@@ -10,20 +10,12 @@ import javax.swing.border.*;
 
 public class VoterElectionDetailsPanel extends JPanel implements ActionListener {
 
-    private String voterName;
-    private String voterID;
-    private String electionName;
-    private String description;
-    private String electionStatus;
-
+    private String voterName, voterID, electionName, description, electionStatus;
     private int electionID;
-
     private Runnable backAction;
 
     private JButton backButton, candidatesButton, voteButton, resultsButton;
-
     private JLabel statusLabel;
-
     private JPanel contentPanel;
 
     public VoterElectionDetailsPanel(
@@ -90,7 +82,7 @@ public class VoterElectionDetailsPanel extends JPanel implements ActionListener 
 
         statusLabel = new JLabel();
         statusLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        statusLabel.setBounds(35, 135, 300, 30);
+        statusLabel.setBounds(35, 135, 400, 30);
 
         JLabel sectionLabel = new JLabel("AVAILABLE SECTIONS");
         sectionLabel.setFont(new Font("Arial", Font.BOLD, 17));
@@ -124,7 +116,6 @@ public class VoterElectionDetailsPanel extends JPanel implements ActionListener 
     private JButton createButton(String text, int x, int y) {
 
         JButton button = new JButton(text);
-
         button.setBounds(x, y, 720, 45);
         button.setFont(new Font("Arial", Font.BOLD, 15));
         button.setBackground(new Color(35, 125, 225));
@@ -169,16 +160,19 @@ public class VoterElectionDetailsPanel extends JPanel implements ActionListener 
         boolean isOpen = checkCurrentElectionStatus();
 
         if (!isOpen) {
+
             statusLabel.setText("ELECTION CLOSED OR NOT YET OPEN");
             statusLabel.setForeground(new Color(200, 65, 65));
             voteButton.setVisible(false);
 
         } else if (alreadyVoted) {
+
             statusLabel.setText("YOU HAVE ALREADY VOTED");
             statusLabel.setForeground(new Color(20, 160, 90));
             voteButton.setVisible(false);
 
         } else {
+
             statusLabel.setText("OPEN FOR VOTING");
             statusLabel.setForeground(new Color(20, 160, 90));
             voteButton.setVisible(true);
@@ -200,7 +194,6 @@ public class VoterElectionDetailsPanel extends JPanel implements ActionListener 
                 if (rs.next()) {
 
                     String status = rs.getString("status");
-
                     Timestamp start = rs.getTimestamp("start_datetime");
                     Timestamp end = rs.getTimestamp("end_datetime");
 
@@ -209,6 +202,8 @@ public class VoterElectionDetailsPanel extends JPanel implements ActionListener 
                     );
 
                     return "ONGOING".equals(status)
+                            && start != null
+                            && end != null
                             && !now.before(start)
                             && now.before(end);
                 }
@@ -243,10 +238,21 @@ public class VoterElectionDetailsPanel extends JPanel implements ActionListener 
 
         } else if (e.getSource() == voteButton) {
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Cast Vote panel will be connected next."
+            CastVotePanel panel = new CastVotePanel(
+                    voterName,
+                    voterID,
+                    electionID,
+                    electionName,
+                    electionStatus
             );
+
+            JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+
+            if (parentFrame != null) {
+                parentFrame.setContentPane(panel);
+                parentFrame.revalidate();
+                parentFrame.repaint();
+            }
 
         } else if (e.getSource() == resultsButton) {
 
