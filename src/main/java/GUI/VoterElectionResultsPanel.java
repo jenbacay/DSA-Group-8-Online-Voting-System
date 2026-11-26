@@ -14,18 +14,16 @@ import java.util.List;
 public class VoterElectionResultsPanel extends JFrame implements ActionListener {
 
     private JPanel mainPanel, summaryPanel, barChartPanel, rankingPanel;
-
     private JComboBox<String> positionComboBox;
-
-    private JLabel summaryVotesLabel,leadingCandidateLabel, rankingTitleLabel;
- 
+    private JLabel summaryVotesLabel, leadingCandidateLabel, rankingTitleLabel;
     private JTable rankingTable;
     private DefaultTableModel rankingModel;
-
     private JButton backButton, refreshButton;
 
     private String voterName;
     private String voterID;
+    private int electionID;
+    private Runnable backAction;
 
     private final Color darkBlue = new Color(25, 75, 125);
     private final Color blue = new Color(40, 125, 220);
@@ -42,7 +40,11 @@ public class VoterElectionResultsPanel extends JFrame implements ActionListener 
 
     private List<String[]> candidateResults = new ArrayList<>();
 
-    public VoterElectionResultsPanel(String voterName, String voterID) {
+    public VoterElectionResultsPanel(
+            String voterName,
+            String voterID,
+            int electionID,
+            Runnable backAction) {
 
         this.voterName = voterName == null || voterName.trim().isEmpty()
                 ? "Voter" : voterName.trim();
@@ -50,9 +52,12 @@ public class VoterElectionResultsPanel extends JFrame implements ActionListener 
         this.voterID = voterID == null || voterID.trim().isEmpty()
                 ? "ID not received" : voterID.trim();
 
+        this.electionID = electionID;
+        this.backAction = backAction;
+
         setTitle("Election Results");
         setSize(900, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
         setLayout(null);
@@ -67,7 +72,6 @@ public class VoterElectionResultsPanel extends JFrame implements ActionListener 
         add(mainPanel);
 
         createResultsPanel();
-
         loadResults();
     }
 
@@ -304,7 +308,7 @@ public class VoterElectionResultsPanel extends JFrame implements ActionListener 
         refreshButton.addActionListener(this);
         mainPanel.add(refreshButton);
 
-        backButton = new JButton("BACK TO DASHBOARD");
+        backButton = new JButton("BACK TO ELECTION");
         backButton.setFont(new Font("Arial", Font.BOLD, 11));
         backButton.setForeground(Color.WHITE);
         backButton.setBackground(darkBlue);
@@ -334,7 +338,7 @@ public class VoterElectionResultsPanel extends JFrame implements ActionListener 
                 + "ON c.position_id = ep.position_id "
                 + "LEFT JOIN votes v "
                 + "ON c.candidate_id = v.candidate_id "
-                + "WHERE ep.position_name = ? "
+                + "WHERE ep.position_name = ? AND ep.election_id = ? "
                 + "GROUP BY c.candidate_id, c.name, c.party, ep.position_name "
                 + "ORDER BY total_votes DESC, c.candidate_id ASC";
 
@@ -342,6 +346,7 @@ public class VoterElectionResultsPanel extends JFrame implements ActionListener 
              PreparedStatement pst = con.prepareStatement(sql)) {
 
             pst.setString(1, selectedPosition);
+            pst.setInt(2, electionID);
 
             try (ResultSet rs = pst.executeQuery()) {
 
@@ -455,10 +460,10 @@ public class VoterElectionResultsPanel extends JFrame implements ActionListener 
 
         } else if (e.getSource() == backButton) {
 
-            VoterDashboard dashboard =
-                    new VoterDashboard(voterName, voterID);
+            if (backAction != null) {
+                backAction.run();
+            }
 
-            dashboard.setVisible(true);
             dispose();
         }
     }
