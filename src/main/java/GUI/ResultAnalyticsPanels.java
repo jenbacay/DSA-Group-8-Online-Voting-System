@@ -21,20 +21,12 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
 
     private JComboBox<String> positionComboBox;
 
-    private JLabel summaryVotesLabel;
-    private JLabel leadingCandidateLabel;
-    private JLabel analyticsVotersLabel;
-    private JLabel analyticsVotesLabel;
-    private JLabel analyticsTurnoutLabel;
-    private JLabel rankingTitleLabel;
+    private JLabel summaryVotesLabel, leadingCandidateLabel, analyticsVotersLabel, analyticsVotesLabel, analyticsTurnoutLabel, rankingTitleLabel;
 
     private JTable rankingTable;
     private DefaultTableModel rankingModel;
 
-    private JButton showAnalyticsButton;
-    private JButton backButton;
-    private JButton refreshResultsButton;
-    private JButton refreshAnalyticsButton;
+    private JButton showAnalyticsButton, backButton, refreshResultButton, refreshAnalyticsButton;
 
     private Color darkBlue = new Color(25, 75, 125);
     private Color blue = new Color(40, 125, 220);
@@ -74,10 +66,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         cardLayout.show(this, "RESULTS");
     }
 
-    // ==============================
-    // RESULTS PANEL
-    // ==============================
-
     private void createResultsPanel() {
 
         resultsPanel = new JPanel();
@@ -91,7 +79,8 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         resultsPanel.add(titleLabel);
 
         JLabel subtitleLabel = new JLabel(
-            "Actual votes received by each candidate");
+            "Actual votes received by each candidate"
+        );
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         subtitleLabel.setForeground(Color.GRAY);
         subtitleLabel.setBounds(20, 42, 550, 22);
@@ -107,8 +96,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         positionComboBox.setBounds(120, 70, 190, 28);
         positionComboBox.addActionListener(this);
         resultsPanel.add(positionComboBox);
-
-        // SUMMARY PANEL
 
         summaryPanel = new JPanel();
         summaryPanel.setLayout(null);
@@ -138,8 +125,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         leadingCandidateLabel.setFont(new Font("Arial", Font.PLAIN, 11));
         leadingCandidateLabel.setBounds(220, 32, 410, 20);
         summaryPanel.add(leadingCandidateLabel);
-
-        // BAR CHART
 
         barChartPanel = new JPanel() {
 
@@ -171,12 +156,8 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
                 int maxVotes = 1;
 
                 for (String[] candidate : candidateResults) {
-
                     int votes = Integer.parseInt(candidate[4]);
-
-                    if (votes > maxVotes) {
-                        maxVotes = votes;
-                    }
+                    maxVotes = Math.max(maxVotes, votes);
                 }
 
                 for (int i = 0; i <= 4; i++) {
@@ -190,17 +171,19 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
                 if (candidateResults.isEmpty()) {
 
                     g2.setColor(Color.GRAY);
-                    g2.drawString("No candidate results available.", 15, 70);
+                    g2.drawString(
+                        "No candidate results available.",
+                        15, 70
+                    );
+
                     return;
                 }
 
                 int count = candidateResults.size();
+                int slotWidth = Math.max(1, (chartRight - chartLeft) / count);
+                int barWidth = Math.max(5, Math.min(20, slotWidth - 5));
 
-                int slotWidth = (chartRight - chartLeft) / count;
-
-                int barWidth = Math.max(
-                    5, Math.min(20, slotWidth - 5)
-                );
+                String firstParty = candidateResults.get(0)[3];
 
                 int index = 0;
 
@@ -215,7 +198,7 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
 
                     int y = chartBottom - barHeight;
 
-                    if (candidate[3].equalsIgnoreCase("Party List 1")) {
+                    if (candidate[3].equalsIgnoreCase(firstParty)) {
                         g2.setColor(blue);
                     } else {
                         g2.setColor(green);
@@ -248,8 +231,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         barChartPanel.setBorder(new LineBorder(borderBlue, 1));
         barChartPanel.setBounds(20, 183, 315, 270);
         resultsPanel.add(barChartPanel);
-
-        // RANKING TABLE
 
         rankingPanel = new JPanel();
         rankingPanel.setLayout(null);
@@ -296,8 +277,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         rankingScrollPane.setBounds(5, 30, 313, 230);
         rankingPanel.add(rankingScrollPane);
 
-        // BUTTONS
-
         refreshResultsButton = new JButton("REFRESH RESULTS");
         refreshResultsButton.setFont(new Font("Arial", Font.BOLD, 11));
         refreshResultsButton.setForeground(Color.WHITE);
@@ -317,10 +296,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         resultsPanel.add(showAnalyticsButton);
     }
 
-    // ==============================
-    // LOAD ACTUAL RESULTS FROM MYSQL
-    // ==============================
-
     private void loadResults() {
 
         candidateResults.clear();
@@ -334,12 +309,15 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         }
 
         String sql =
-            "SELECT c.candidate_id, c.name, c.party, c.position, " +
-            "COUNT(v.vote_id) AS total_votes " +
+            "SELECT c.candidate_id, c.name, c.party, " +
+            "ep.position_name, COUNT(v.vote_id) AS total_votes " +
             "FROM candidates c " +
-            "LEFT JOIN votes v ON c.candidate_id = v.candidate_id " +
-            "WHERE c.position = ? " +
-            "GROUP BY c.candidate_id, c.name, c.party, c.position " +
+            "INNER JOIN election_positions ep " +
+            "ON c.position_id = ep.position_id " +
+            "LEFT JOIN votes v " +
+            "ON c.candidate_id = v.candidate_id " +
+            "WHERE ep.position_name = ? " +
+            "GROUP BY c.candidate_id, c.name, c.party, ep.position_name " +
             "ORDER BY total_votes DESC, c.candidate_id ASC";
 
         try (Connection con = DBConnection.getConnection();
@@ -347,67 +325,74 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
 
             pst.setString(1, selectedPosition);
 
-            ResultSet rs = pst.executeQuery();
+            try (ResultSet rs = pst.executeQuery()) {
 
-            int rank = 1;
-            int totalPositionVotes = 0;
-            String leadingCandidate = "None";
-            int highestVotes = -1;
+                int rank = 1;
+                int totalPositionVotes = 0;
+                String leadingCandidate = "None";
+                int highestVotes = -1;
 
-            while (rs.next()) {
+                while (rs.next()) {
 
-                String candidateID = rs.getString("candidate_id");
-                String candidateName = rs.getString("name");
-                String party = rs.getString("party");
-                String position = rs.getString("position");
+                    String candidateID = rs.getString("candidate_id");
+                    String candidateName = rs.getString("name");
+                    String party = rs.getString("party");
+                    String position = rs.getString("position_name");
 
-                int votes = rs.getInt("total_votes");
+                    int votes = rs.getInt("total_votes");
 
-                totalPositionVotes += votes;
+                    totalPositionVotes += votes;
 
-                if (votes > highestVotes) {
-                    highestVotes = votes;
-                    leadingCandidate = candidateName;
+                    if (votes > highestVotes) {
+                        highestVotes = votes;
+                        leadingCandidate = candidateName;
+                    }
+
+                    String[] candidate = {
+                        candidateID,
+                        candidateName,
+                        position,
+                        party,
+                        String.valueOf(votes)
+                    };
+
+                    candidateResults.add(candidate);
+
+                    rankingModel.addRow(new Object[]{
+                        rank,
+                        candidateID,
+                        candidateName,
+                        party,
+                        votes
+                    });
+
+                    rank++;
                 }
 
-                String[] candidate = {
-                    candidateID,
-                    candidateName,
-                    position,
-                    party,
-                    String.valueOf(votes)
-                };
-
-                candidateResults.add(candidate);
-
-                rankingModel.addRow(new Object[]{
-                    rank,
-                    candidateID,
-                    candidateName,
-                    party,
-                    votes
-                });
-
-                rank++;
-            }
-
-            summaryVotesLabel.setText(totalPositionVotes + " votes");
-
-            if (highestVotes > 0) {
-                leadingCandidateLabel.setText(
-                    "Leading: " + leadingCandidate
+                summaryVotesLabel.setText(
+                    totalPositionVotes + " votes"
                 );
-            } else {
-                leadingCandidateLabel.setText(
-                    "Leading candidate: No votes yet"
+
+                if (highestVotes > 0) {
+                    leadingCandidateLabel.setText(
+                        "Leading: " + leadingCandidate
+                    );
+                } else if (candidateResults.isEmpty()) {
+                    leadingCandidateLabel.setText(
+                        "Leading candidate: None"
+                    );
+                } else {
+                    leadingCandidateLabel.setText(
+                        "Leading candidate: No votes yet"
+                    );
+                }
+
+                rankingTitleLabel.setText(
+                    "RANKINGS - " + selectedPosition.toUpperCase()
                 );
+
+                barChartPanel.repaint();
             }
-
-            rankingTitleLabel.setText(
-                "RANKINGS - " + selectedPosition.toUpperCase()
-            );
-
-            barChartPanel.repaint();
 
         } catch (SQLException ex) {
 
@@ -419,10 +404,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
             );
         }
     }
-
-    // ==============================
-    // ANALYTICS PANEL
-    // ==============================
 
     private void createAnalyticsPanel() {
 
@@ -437,7 +418,8 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         analyticsPanel.add(titleLabel);
 
         JLabel subtitleLabel = new JLabel(
-            "Voter participation and turnout overview");
+            "Voter participation and turnout overview"
+        );
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         subtitleLabel.setForeground(Color.GRAY);
         subtitleLabel.setBounds(20, 42, 550, 22);
@@ -475,8 +457,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
             430,
             12
         );
-
-        // PIE CHART
 
         pieChartPanel = new JPanel() {
 
@@ -585,8 +565,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         pieChartPanel.setBounds(20, 180, 650, 270);
         analyticsPanel.add(pieChartPanel);
 
-        // BUTTONS
-
         backButton = new JButton("BACK TO RESULTS");
         backButton.setFont(new Font("Arial", Font.BOLD, 11));
         backButton.setForeground(darkBlue);
@@ -605,10 +583,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         refreshAnalyticsButton.addActionListener(this);
         analyticsPanel.add(refreshAnalyticsButton);
     }
-
-    // ==============================
-    // ANALYTICS SUMMARY
-    // ==============================
 
     private void addAnalyticsValue(
         JPanel panel,
@@ -642,10 +616,14 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
     private void updateAnalytics() {
 
         String votersSQL =
-            "SELECT COUNT(*) AS total FROM voters";
+            "SELECT COUNT(*) AS total " +
+            "FROM voters WHERE registered = 'YES'";
 
         String votedSQL =
-            "SELECT COUNT(DISTINCT voter_id) AS total FROM votes";
+            "SELECT COUNT(DISTINCT v.voter_id) AS total " +
+            "FROM votes v " +
+            "INNER JOIN voters vr ON v.voter_id = vr.voter_id " +
+            "WHERE vr.registered = 'YES'";
 
         try (Connection con = DBConnection.getConnection()) {
 
@@ -700,10 +678,6 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         }
     }
 
-    // ==============================
-    // ACTION LISTENER
-    // ==============================
-
     @Override
     public void actionPerformed(ActionEvent e) {
 
@@ -741,6 +715,5 @@ public class ResultAnalyticsPanels extends JPanel implements ActionListener {
         }
     }
 }
-
 
 
