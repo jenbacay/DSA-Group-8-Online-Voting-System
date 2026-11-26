@@ -150,7 +150,6 @@ public class LoginPanel extends JFrame implements ActionListener {
                 role = "VOTER";
             }
 
-            // CHECK EMPTY FIELDS
             if (username.isEmpty() || password.isEmpty()) {
 
                 JOptionPane.showMessageDialog(this,
@@ -165,7 +164,6 @@ public class LoginPanel extends JFrame implements ActionListener {
                 return;
             }
 
-            // LOGIN SQL
             String sql = "SELECT a.account_id, a.full_name, a.role "
                     + "FROM accounts a "
                     + "LEFT JOIN voters v "
@@ -240,7 +238,7 @@ public class LoginPanel extends JFrame implements ActionListener {
                                     return;
                                 }
 
-                                VoterDashboard dashboard =new VoterDashboard(voterName, voterID);
+                                VoterDashboard dashboard = new VoterDashboard();
                                 dashboard.setVisible(true);
                                 this.dispose();
                             }
