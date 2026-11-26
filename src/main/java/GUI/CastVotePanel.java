@@ -1,23 +1,11 @@
 package GUI;
 
 import Database.DBConnection;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
@@ -41,15 +29,22 @@ public class CastVotePanel extends JFrame implements ActionListener {
 
     private String voterName;
     private String voterID;
+    private String electionName;
+    private int electionID;
+    private String electionStatus;
 
-    public CastVotePanel() {
-        this("Voter", "Not provided");
-    }
-
-    public CastVotePanel(String voterName, String voterID) {
+    public CastVotePanel(
+            String voterName,
+            String voterID,
+            int electionID,
+            String electionName,
+            String electionStatus) {
 
         this.voterName = voterName;
         this.voterID = voterID;
+        this.electionID = electionID;
+        this.electionName = electionName;
+        this.electionStatus = electionStatus;
 
         setTitle("Online Voting System - Cast Your Vote");
         setSize(670, 500);
@@ -60,8 +55,7 @@ public class CastVotePanel extends JFrame implements ActionListener {
 
         getContentPane().setBackground(lightBlue);
 
-        mainPanel = new JPanel();
-        mainPanel.setLayout(new BorderLayout(15, 10));
+        mainPanel = new JPanel(new BorderLayout(15, 10));
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(new EmptyBorder(20, 25, 20, 25));
         mainPanel.setBounds(0, 0, 654, 461);
@@ -79,7 +73,7 @@ public class CastVotePanel extends JFrame implements ActionListener {
         voterIDLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         voterIDLabel.setForeground(new Color(50, 90, 140));
 
-        electionLabel = new JLabel("Election: Loading...");
+        electionLabel = new JLabel("Election: " + electionName);
         electionLabel.setFont(new Font("Arial", Font.BOLD, 13));
         electionLabel.setForeground(new Color(35, 85, 130));
 
@@ -120,8 +114,9 @@ public class CastVotePanel extends JFrame implements ActionListener {
 
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel buttonPanel = new JPanel(
+            new FlowLayout(FlowLayout.RIGHT, 10, 0)
+        );
         buttonPanel.setBackground(Color.WHITE);
 
         submitButton = new JButton("Submit Vote");
@@ -159,44 +154,46 @@ public class CastVotePanel extends JFrame implements ActionListener {
         candidateSelections.clear();
         positionLimits.clear();
 
+        submitButton.setEnabled(true);
+
+        if (!isVotingOpen()) {
+            showNoCandidatesMessage("This election is not open for voting.");
+            return;
+        }
+
+        if (hasAlreadyVoted()) {
+            showNoCandidatesMessage(
+                "You have already submitted your vote for this election."
+            );
+            return;
+        }
+
         Map<String, List<Candidate>> candidateList = new LinkedHashMap<>();
 
         String sql =
-            "SELECT e.election_name, ep.position_name, ep.max_selections, " +
+            "SELECT ep.position_name, ep.max_selections, " +
             "c.candidate_id, c.name, c.party " +
             "FROM candidates c " +
             "INNER JOIN election_positions ep " +
             "ON c.position_id = ep.position_id " +
-            "INNER JOIN elections e " +
-            "ON ep.election_id = e.election_id " +
-            "WHERE e.status = 'ONGOING' " +
+            "WHERE ep.election_id = ? " +
             "ORDER BY ep.position_id, c.party, c.name";
 
-        try (Connection con = DBConnection.getConnection()) {
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
 
             if (con == null) {
-                electionLabel.setText("Database connection unavailable");
-                showMessage("Database connection failed.");
-                return;
+                throw new SQLException("Database connection failed.");
             }
 
-            try (PreparedStatement ps = con.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
+            ps.setInt(1, electionID);
 
-                String electionName = null;
+            try (ResultSet rs = ps.executeQuery()) {
 
                 while (rs.next()) {
 
-                    if (electionName == null) {
-                        electionName = rs.getString("election_name");
-                    }
-
                     String position = rs.getString("position_name");
                     int maxSelections = rs.getInt("max_selections");
-
-                    if (maxSelections < 1) {
-                        maxSelections = 1;
-                    }
 
                     Candidate candidate = new Candidate(
                         rs.getString("candidate_id"),
@@ -207,19 +204,21 @@ public class CastVotePanel extends JFrame implements ActionListener {
 
                     if (!candidateList.containsKey(position)) {
                         candidateList.put(position, new ArrayList<>());
-                        positionLimits.put(position, maxSelections);
+                        positionLimits.put(
+                            position,
+                            Math.max(maxSelections, 1)
+                        );
                     }
 
                     candidateList.get(position).add(candidate);
                 }
+            }
 
-                if (electionName == null) {
-                    electionLabel.setText("No ongoing election");
-                    showNoCandidatesMessage();
-                    return;
-                }
-
-                electionLabel.setText("Election: " + electionName);
+            if (candidateList.isEmpty()) {
+                showNoCandidatesMessage(
+                    "No candidates are available for this election."
+                );
+                return;
             }
 
             for (String position : candidateList.keySet()) {
@@ -256,8 +255,10 @@ public class CastVotePanel extends JFrame implements ActionListener {
                         ? "Select 1 candidate"
                         : "Select up to " + maxSelections + " candidates"
                 );
+
                 limitLabel.setFont(new Font("Arial", Font.ITALIC, 12));
                 limitLabel.setForeground(Color.GRAY);
+
                 positionPanel.add(limitLabel);
                 positionPanel.add(Box.createVerticalStrut(8));
 
@@ -271,11 +272,11 @@ public class CastVotePanel extends JFrame implements ActionListener {
 
                     for (Candidate candidate : candidates) {
 
-                        JRadioButton radioButton = new JRadioButton(
-                            candidate.toString()
-                        );
+                        JRadioButton radioButton =
+                            new JRadioButton(candidate.toString());
 
                         styleCandidate(radioButton);
+
                         group.add(radioButton);
                         controls.add(radioButton);
                         candidateSelections.put(radioButton, candidate);
@@ -286,13 +287,13 @@ public class CastVotePanel extends JFrame implements ActionListener {
 
                     for (Candidate candidate : candidates) {
 
-                        JCheckBox checkBox = new JCheckBox(
-                            candidate.toString()
-                        );
+                        JCheckBox checkBox =
+                            new JCheckBox(candidate.toString());
 
                         styleCandidate(checkBox);
 
                         checkBox.addActionListener(e -> {
+
                             int selectedCount = 0;
 
                             for (AbstractButton button : controls) {
@@ -302,6 +303,7 @@ public class CastVotePanel extends JFrame implements ActionListener {
                             }
 
                             if (selectedCount > maxSelections) {
+
                                 checkBox.setSelected(false);
 
                                 JOptionPane.showMessageDialog(
@@ -325,48 +327,108 @@ public class CastVotePanel extends JFrame implements ActionListener {
                 candidatePanel.add(Box.createVerticalStrut(15));
             }
 
-            if (candidateList.isEmpty()) {
-                showNoCandidatesMessage();
-            }
-
         } catch (SQLException ex) {
+
             JOptionPane.showMessageDialog(
                 this,
                 "Error loading candidates: " + ex.getMessage(),
                 "Database Error",
                 JOptionPane.ERROR_MESSAGE
             );
+
+            submitButton.setEnabled(false);
         }
 
         candidatePanel.revalidate();
         candidatePanel.repaint();
     }
 
-    private void showNoCandidatesMessage() {
+    private boolean isVotingOpen() {
+
+        String sql =
+            "SELECT status FROM elections WHERE election_id = ?";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            if (con == null) {
+                return false;
+            }
+
+            ps.setInt(1, electionID);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+
+                    String status = rs.getString("status");
+
+                    return status != null &&
+                        (status.equalsIgnoreCase("ONGOING") ||
+                         status.equalsIgnoreCase("OPEN"));
+                }
+            }
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Unable to check election status: " + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+
+        return false;
+    }
+
+    private boolean hasAlreadyVoted() {
+
+        String sql =
+            "SELECT COUNT(*) FROM voter_election_status " +
+            "WHERE voter_id = ? AND election_id = ?";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            if (con == null) {
+                return true;
+            }
+
+            ps.setString(1, voterID);
+            ps.setInt(2, electionID);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Unable to check voting status: " + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+
+            return true;
+        }
+    }
+
+    private void showNoCandidatesMessage(String message) {
 
         candidatePanel.removeAll();
 
-        JLabel messageLabel = new JLabel(
-            "No candidates are available for an ongoing election."
-        );
+        JLabel messageLabel = new JLabel(message);
         messageLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         messageLabel.setForeground(Color.GRAY);
         messageLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         candidatePanel.add(messageLabel);
-        candidatePanel.revalidate();
-        candidatePanel.repaint();
 
         submitButton.setEnabled(false);
-    }
 
-    private void showMessage(String message) {
-        JOptionPane.showMessageDialog(
-            this,
-            message,
-            "Notice",
-            JOptionPane.WARNING_MESSAGE
-        );
+        candidatePanel.revalidate();
+        candidatePanel.repaint();
     }
 
     private void styleCandidate(AbstractButton button) {
@@ -395,25 +457,18 @@ public class CastVotePanel extends JFrame implements ActionListener {
             }
 
             if (selectedCount == 0) {
+
                 JOptionPane.showMessageDialog(
                     this,
                     "Please select a candidate for " + position + ".",
                     "Incomplete Vote",
                     JOptionPane.WARNING_MESSAGE
                 );
+
                 return false;
             }
 
-            int maxSelections = positionLimits.get(position);
-
-            if (selectedCount > maxSelections) {
-                JOptionPane.showMessageDialog(
-                    this,
-                    "You can select up to " + maxSelections +
-                    " candidates for " + position + ".",
-                    "Invalid Selection",
-                    JOptionPane.WARNING_MESSAGE
-                );
+            if (selectedCount > positionLimits.get(position)) {
                 return false;
             }
         }
@@ -421,27 +476,38 @@ public class CastVotePanel extends JFrame implements ActionListener {
         return true;
     }
 
+    private List<String> getSelectedCandidateIDs() {
+
+        List<String> candidateIDs = new ArrayList<>();
+
+        for (AbstractButton button : candidateSelections.keySet()) {
+
+            if (button.isSelected()) {
+                candidateIDs.add(
+                    candidateSelections.get(button).candidateID
+                );
+            }
+        }
+
+        return candidateIDs;
+    }
+
     private List<String> getSelectedCandidates() {
 
         List<String> selectedCandidates = new ArrayList<>();
 
-        for (String position : positionControls.keySet()) {
+        for (AbstractButton button : candidateSelections.keySet()) {
 
-            List<AbstractButton> controls = positionControls.get(position);
+            if (button.isSelected()) {
 
-            for (AbstractButton button : controls) {
+                Candidate candidate = candidateSelections.get(button);
 
-                if (button.isSelected()) {
-
-                    Candidate candidate = candidateSelections.get(button);
-
-                    selectedCandidates.add(
-                        candidate.position + ": " +
-                        candidate.candidateID + " - " +
-                        candidate.name + " (" +
-                        candidate.party + ")"
-                    );
-                }
+                selectedCandidates.add(
+                    candidate.position + ": " +
+                    candidate.candidateID + " - " +
+                    candidate.name + " (" +
+                    candidate.party + ")"
+                );
             }
         }
 
@@ -457,37 +523,50 @@ public class CastVotePanel extends JFrame implements ActionListener {
                 return;
             }
 
+            if (!isVotingOpen() || hasAlreadyVoted()) {
+
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Voting is no longer available for this election.",
+                    "Voting Unavailable",
+                    JOptionPane.WARNING_MESSAGE
+                );
+
+                submitButton.setEnabled(false);
+                return;
+            }
+
             int choice = JOptionPane.showConfirmDialog(
                 this,
-                "Are you sure you want to submit your selections?",
-                "Confirm Votes",
+                "Are you sure you want to review and confirm your selections?",
+                "Review Votes",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE
             );
 
             if (choice == JOptionPane.YES_OPTION) {
 
-                List<String> selectedCandidates = getSelectedCandidates();
-
-                VotingConfirmation confirmation = new VotingConfirmation(
-                    voterName,
-                    voterID,
-                    selectedCandidates
-                );
+                VotingConfirmation confirmation =
+                    new VotingConfirmation(
+                        voterName,
+                        voterID,
+                        electionID,
+                        electionName,
+                        getSelectedCandidateIDs(),
+                        getSelectedCandidates()
+                    );
 
                 confirmation.setVisible(true);
-                this.dispose();
+                dispose();
             }
 
         } else if (e.getSource() == backButton) {
 
-            VoterDashboard voterDashboard = new VoterDashboard(
-                voterName,
-                voterID
-            );
+            VoterDashboard dashboard =
+                new VoterDashboard(voterName, voterID);
 
-            voterDashboard.setVisible(true);
-            this.dispose();
+            dashboard.setVisible(true);
+            dispose();
         }
     }
 
@@ -516,3 +595,4 @@ public class CastVotePanel extends JFrame implements ActionListener {
         }
     }
 }
+
