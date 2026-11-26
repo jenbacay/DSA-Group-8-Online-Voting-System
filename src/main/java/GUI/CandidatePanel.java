@@ -1,4 +1,3 @@
-
 package GUI;
 
 import Database.DBConnection;
@@ -16,15 +15,14 @@ import javax.swing.table.DefaultTableModel;
 
 public class CandidatePanel extends JPanel implements ActionListener {
 
-    private JLabel titleLabel, nameLabel, partyLabel, positionLabel;
+    private JLabel titleLabel, electionLabel, nameLabel, partyLabel, positionLabel;
+    private JComboBox<ElectionItem> electionComboBox, positionComboBox;
     private JTextField nameField, partyField;
-    private JComboBox<String> positionComboBox;
     private JButton addButton, updateButton, deleteButton, clearButton;
     private JTable candidateTable;
     private DefaultTableModel tableModel;
-
     private String selectedCandidateId = null;
-
+    private boolean loadingElections = false;
     private Color darkBlue = new Color(20, 55, 85);
     private Color backgroundColor = new Color(240, 246, 252);
     private Color buttonColor = new Color(220, 233, 245);
@@ -40,56 +38,57 @@ public class CandidatePanel extends JPanel implements ActionListener {
         titleLabel.setBounds(25, 20, 400, 30);
         add(titleLabel);
 
+        electionLabel = createLabel("Select Election:");
+        electionLabel.setBounds(25, 65, 110, 25);
+        add(electionLabel);
+
+        electionComboBox = new JComboBox<>();
+        electionComboBox.setFont(new Font("Arial", Font.PLAIN, 13));
+        electionComboBox.setBounds(140, 62, 410, 32);
+        add(electionComboBox);
+
         nameLabel = createLabel("Candidate Name:");
-        nameLabel.setBounds(25, 75, 120, 25);
+        nameLabel.setBounds(25, 110, 120, 25);
         add(nameLabel);
 
         nameField = createTextField();
-        nameField.setBounds(140, 72, 180, 30);
+        nameField.setBounds(140, 107, 180, 30);
         add(nameField);
 
         partyLabel = createLabel("Partylist:");
-        partyLabel.setBounds(340, 75, 70, 25);
+        partyLabel.setBounds(340, 110, 70, 25);
         add(partyLabel);
 
         partyField = createTextField();
-        partyField.setBounds(400, 72, 150, 30);
+        partyField.setBounds(400, 107, 150, 30);
         add(partyField);
 
         positionLabel = createLabel("Position:");
-        positionLabel.setBounds(25, 120, 100, 25);
+        positionLabel.setBounds(25, 155, 100, 25);
         add(positionLabel);
 
-        String[] positions = {
-            "Select Position",
-            "SK Chairperson",
-            "SK Kagawad",
-            "SK Treasurer",
-            "SK Secretary"
-        };
-
-        positionComboBox = new JComboBox<>(positions);
-        positionComboBox.setBounds(140, 117, 180, 32);
+        positionComboBox = new JComboBox<>();
         positionComboBox.setFont(new Font("Arial", Font.PLAIN, 13));
+        positionComboBox.setBounds(140, 152, 180, 32);
         add(positionComboBox);
 
         addButton = createButton("Add");
-        addButton.setBounds(25, 165, 90, 32);
+        addButton.setBounds(25, 200, 90, 32);
         addButton.addActionListener(this);
         add(addButton);
 
         updateButton = createButton("Update");
-        updateButton.setBounds(125, 165, 90, 32);
+        updateButton.setBounds(125, 200, 90, 32);
         updateButton.addActionListener(this);
         add(updateButton);
 
         deleteButton = createButton("Delete");
-        deleteButton.setBounds(225, 165, 90, 32);
+        deleteButton.setBounds(225, 200, 90, 32);
         deleteButton.addActionListener(this);
         add(deleteButton);
 
         clearButton = createButton("Clear");
-        clearButton.setBounds(325, 165, 90, 32);
+        clearButton.setBounds(325, 200, 90, 32);
         clearButton.addActionListener(this);
         add(clearButton);
 
@@ -97,7 +96,8 @@ public class CandidatePanel extends JPanel implements ActionListener {
             "Candidate ID",
             "Candidate Name",
             "Partylist",
-            "Position"
+            "Position",
+            "Position ID"
         };
 
         tableModel = new DefaultTableModel(columns, 0) {
@@ -118,14 +118,28 @@ public class CandidatePanel extends JPanel implements ActionListener {
         candidateTable.getTableHeader().setBackground(darkBlue);
         candidateTable.getTableHeader().setForeground(Color.WHITE);
 
+        candidateTable.removeColumn(
+                candidateTable.getColumnModel().getColumn(4));
+
         JScrollPane scrollPane = new JScrollPane(candidateTable);
-        scrollPane.setBounds(25, 215, 655, 320);
+        scrollPane.setBounds(25, 250, 655, 285);
         scrollPane.setBorder(
                 new LineBorder(new Color(200, 210, 220)));
 
         add(scrollPane);
 
-        // Select candidate from table
+        loadElections();
+
+        electionComboBox.addActionListener(e -> {
+
+            if (!loadingElections) {
+
+                clearFields();
+                loadPositions();
+                loadCandidates();
+            }
+        });
+
         candidateTable.getSelectionModel().addListSelectionListener(e -> {
 
             if (!e.getValueIsAdjusting()) {
@@ -134,21 +148,27 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
                 if (row >= 0) {
 
+                    int modelRow =
+                            candidateTable.convertRowIndexToModel(row);
+
                     selectedCandidateId =
-                            tableModel.getValueAt(row, 0).toString();
+                            tableModel.getValueAt(modelRow, 0).toString();
 
                     nameField.setText(
-                            tableModel.getValueAt(row, 1).toString());
+                            tableModel.getValueAt(modelRow, 1).toString());
 
                     partyField.setText(
-                            tableModel.getValueAt(row, 2).toString());
+                            tableModel.getValueAt(modelRow, 2).toString());
 
-                    positionComboBox.setSelectedItem(
-                            tableModel.getValueAt(row, 3).toString());
+                    int positionId = Integer.parseInt(
+                            tableModel.getValueAt(modelRow, 4).toString());
+
+                    selectPositionById(positionId);
                 }
             }
         });
 
+        loadPositions();
         loadCandidates();
     }
 
@@ -182,6 +202,164 @@ public class CandidatePanel extends JPanel implements ActionListener {
         return button;
     }
 
+    private static class ElectionItem {
+
+        int id;
+        String name;
+
+        public ElectionItem(int id, String name) {
+
+            this.id = id;
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    private static class PositionItem {
+
+        int id;
+        String name;
+        int maxSelections;
+
+        public PositionItem(int id, String name, int maxSelections) {
+
+            this.id = id;
+            this.name = name;
+            this.maxSelections = maxSelections;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    private Integer getSelectedElectionId() {
+
+        ElectionItem selected =
+                (ElectionItem) electionComboBox.getSelectedItem();
+
+        if (selected == null || selected.id == -1) {
+            return null;
+        }
+
+        return selected.id;
+    }
+
+    private PositionItem getSelectedPosition() {
+
+        PositionItem selected =
+                (PositionItem) positionComboBox.getSelectedItem();
+
+        if (selected == null || selected.id == -1) {
+            return null;
+        }
+
+        return selected;
+    }
+
+    private void loadElections() {
+
+        loadingElections = true;
+
+        electionComboBox.removeAllItems();
+
+        electionComboBox.addItem(
+                new ElectionItem(-1, "Select Election"));
+
+        String sql = "SELECT election_id, election_name "
+                   + "FROM elections "
+                   + "ORDER BY election_id DESC";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql);
+             ResultSet rs = pst.executeQuery()) {
+
+            while (rs.next()) {
+
+                electionComboBox.addItem(
+                        new ElectionItem(
+                                rs.getInt("election_id"),
+                                rs.getString("election_name")
+                        )
+                );
+            }
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error loading elections: " + e.getMessage());
+        }
+
+        electionComboBox.setSelectedIndex(0);
+
+        loadingElections = false;
+    }
+
+    private void loadPositions() {
+
+        positionComboBox.removeAllItems();
+
+        positionComboBox.addItem(
+                new PositionItem(-1, "Select Position", 0));
+
+        Integer electionId = getSelectedElectionId();
+
+        if (electionId == null) {
+            return;
+        }
+
+        String sql = "SELECT position_id, position_name, max_selections "
+                   + "FROM election_positions "
+                   + "WHERE election_id = ? "
+                   + "ORDER BY position_id";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+
+            pst.setInt(1, electionId);
+
+            try (ResultSet rs = pst.executeQuery()) {
+
+                while (rs.next()) {
+
+                    positionComboBox.addItem(
+                            new PositionItem(
+                                    rs.getInt("position_id"),
+                                    rs.getString("position_name"),
+                                    rs.getInt("max_selections")
+                            )
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error loading positions: " + e.getMessage());
+        }
+    }
+
+    private void selectPositionById(int positionId) {
+
+        for (int i = 0; i < positionComboBox.getItemCount(); i++) {
+
+            PositionItem item = positionComboBox.getItemAt(i);
+
+            if (item.id == positionId) {
+
+                positionComboBox.setSelectedIndex(i);
+                return;
+            }
+        }
+    }
+
     private String generateCandidateID(Connection con)
             throws SQLException {
 
@@ -208,75 +386,22 @@ public class CandidatePanel extends JPanel implements ActionListener {
         return "C001";
     }
 
-    private int getPositionLimit(String position) {
-
-        if (position.equals("SK Chairperson")
-                || position.equals("SK Treasurer")
-                || position.equals("SK Secretary")) {
-
-            return 1;
-
-        } else if (position.equals("SK Kagawad")) {
-
-            return 7;
-        }
-
-        return 0;
-    }
-
-    private int getCandidateCount(
-            String party,
-            String position,
-            String excludeCandidateId) {
-
-        String sql;
-
-        if (excludeCandidateId == null) {
-
-            sql = "SELECT COUNT(*) FROM candidates "
-                    + "WHERE party = ? AND position = ?";
-
-        } else {
-
-            sql = "SELECT COUNT(*) FROM candidates "
-                    + "WHERE party = ? AND position = ? "
-                    + "AND candidate_id <> ?";
-        }
-
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement pst = con.prepareStatement(sql)) {
-
-            pst.setString(1, party);
-            pst.setString(2, position);
-
-            if (excludeCandidateId != null) {
-                pst.setString(3, excludeCandidateId);
-            }
-
-            try (ResultSet rs = pst.executeQuery()) {
-
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-
-        } catch (SQLException e) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Error checking candidate limit: "
-                    + e.getMessage());
-        }
-
-        return -1;
-    }
-
-    private boolean validateCandidate(String excludeCandidateId) {
+    private boolean validateCandidate() {
 
         String name = nameField.getText().trim();
         String party = partyField.getText().trim();
-        String position =
-                positionComboBox.getSelectedItem().toString();
+
+        Integer electionId = getSelectedElectionId();
+        PositionItem position = getSelectedPosition();
+
+        if (electionId == null) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select an election.");
+
+            return false;
+        }
 
         if (name.isEmpty() || party.isEmpty()) {
 
@@ -287,7 +412,7 @@ public class CandidatePanel extends JPanel implements ActionListener {
             return false;
         }
 
-        if (position.equals("Select Position")) {
+        if (position == null) {
 
             JOptionPane.showMessageDialog(
                     this,
@@ -296,24 +421,11 @@ public class CandidatePanel extends JPanel implements ActionListener {
             return false;
         }
 
-        int limit = getPositionLimit(position);
-
-        int currentCount = getCandidateCount(
-                party, position, excludeCandidateId);
-
-        if (currentCount == -1) {
-            return false;
-        }
-
-        if (currentCount >= limit) {
+        if (name.length() > 100 || party.length() > 100) {
 
             JOptionPane.showMessageDialog(
                     this,
-                    "This partylist has already reached the maximum "
-                    + "number of candidates for " + position + ".\n\n"
-                    + "Maximum allowed: " + limit,
-                    "Candidate Limit Reached",
-                    JOptionPane.WARNING_MESSAGE);
+                    "Candidate name and partylist must not exceed 100 characters.");
 
             return false;
         }
@@ -323,12 +435,12 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
     private void addCandidate() {
 
-        if (!validateCandidate(null)) {
+        if (!validateCandidate()) {
             return;
         }
 
         String sql = "INSERT INTO candidates "
-                   + "(candidate_id, name, party, position) "
+                   + "(candidate_id, name, party, position_id) "
                    + "VALUES (?, ?, ?, ?)";
 
         try (Connection con = DBConnection.getConnection()) {
@@ -340,8 +452,7 @@ public class CandidatePanel extends JPanel implements ActionListener {
                 pst.setString(1, candidateID);
                 pst.setString(2, nameField.getText().trim());
                 pst.setString(3, partyField.getText().trim());
-                pst.setString(4,
-                        positionComboBox.getSelectedItem().toString());
+                pst.setInt(4, getSelectedPosition().id);
 
                 pst.executeUpdate();
             }
@@ -373,31 +484,43 @@ public class CandidatePanel extends JPanel implements ActionListener {
             return;
         }
 
-        if (!validateCandidate(selectedCandidateId)) {
+        if (!validateCandidate()) {
             return;
         }
 
-        String sql = "UPDATE candidates SET "
-                   + "name = ?, party = ?, position = ? "
-                   + "WHERE candidate_id = ?";
+        String sql = "UPDATE candidates c "
+                   + "INNER JOIN election_positions ep "
+                   + "ON c.position_id = ep.position_id "
+                   + "SET c.name = ?, c.party = ?, c.position_id = ? "
+                   + "WHERE c.candidate_id = ? "
+                   + "AND ep.election_id = ?";
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement pst = con.prepareStatement(sql)) {
 
             pst.setString(1, nameField.getText().trim());
             pst.setString(2, partyField.getText().trim());
-            pst.setString(3,
-                    positionComboBox.getSelectedItem().toString());
+            pst.setInt(3, getSelectedPosition().id);
             pst.setString(4, selectedCandidateId);
+            pst.setInt(5, getSelectedElectionId());
 
-            pst.executeUpdate();
+            int result = pst.executeUpdate();
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Candidate updated successfully!");
+            if (result > 0) {
 
-            clearFields();
-            loadCandidates();
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Candidate updated successfully!");
+
+                clearFields();
+                loadCandidates();
+
+            } else {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Candidate not found in the selected election.");
+            }
 
         } catch (SQLException e) {
 
@@ -429,21 +552,35 @@ public class CandidatePanel extends JPanel implements ActionListener {
             return;
         }
 
-        String sql = "DELETE FROM candidates WHERE candidate_id = ?";
+        String sql = "DELETE c FROM candidates c "
+                   + "INNER JOIN election_positions ep "
+                   + "ON c.position_id = ep.position_id "
+                   + "WHERE c.candidate_id = ? "
+                   + "AND ep.election_id = ?";
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement pst = con.prepareStatement(sql)) {
 
             pst.setString(1, selectedCandidateId);
+            pst.setInt(2, getSelectedElectionId());
 
-            pst.executeUpdate();
+            int result = pst.executeUpdate();
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Candidate deleted successfully!");
+            if (result > 0) {
 
-            clearFields();
-            loadCandidates();
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Candidate deleted successfully!");
+
+                clearFields();
+                loadCandidates();
+
+            } else {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Candidate not found in the selected election.");
+            }
 
         } catch (SQLException e) {
 
@@ -460,24 +597,40 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
         tableModel.setRowCount(0);
 
-        String sql = "SELECT candidate_id, name, party, position "
-                   + "FROM candidates "
-                   + "ORDER BY party, position, candidate_id";
+        Integer electionId = getSelectedElectionId();
+
+        if (electionId == null) {
+            return;
+        }
+
+        String sql = "SELECT c.candidate_id, c.name, c.party, "
+                   + "ep.position_name, c.position_id "
+                   + "FROM candidates c "
+                   + "INNER JOIN election_positions ep "
+                   + "ON c.position_id = ep.position_id "
+                   + "WHERE ep.election_id = ? "
+                   + "ORDER BY c.party, ep.position_name, c.candidate_id";
 
         try (Connection con = DBConnection.getConnection();
-             PreparedStatement pst = con.prepareStatement(sql);
-             ResultSet rs = pst.executeQuery()) {
+             PreparedStatement pst = con.prepareStatement(sql)) {
 
-            while (rs.next()) {
+            pst.setInt(1, electionId);
 
-                Object[] row = {
-                    rs.getString("candidate_id"),
-                    rs.getString("name"),
-                    rs.getString("party"),
-                    rs.getString("position")
-                };
+            try (ResultSet rs = pst.executeQuery()) {
 
-                tableModel.addRow(row);
+                while (rs.next()) {
+
+                    Object[] row = {
+
+                        rs.getString("candidate_id"),
+                        rs.getString("name"),
+                        rs.getString("party"),
+                        rs.getString("position_name"),
+                        rs.getInt("position_id")
+                    };
+
+                    tableModel.addRow(row);
+                }
             }
 
         } catch (SQLException e) {
@@ -489,6 +642,10 @@ public class CandidatePanel extends JPanel implements ActionListener {
     }
 
     public void refreshCandidates() {
+
+        clearFields();
+        loadElections();
+        loadPositions();
         loadCandidates();
     }
 
@@ -496,7 +653,10 @@ public class CandidatePanel extends JPanel implements ActionListener {
 
         nameField.setText("");
         partyField.setText("");
-        positionComboBox.setSelectedIndex(0);
+
+        if (positionComboBox.getItemCount() > 0) {
+            positionComboBox.setSelectedIndex(0);
+        }
 
         selectedCandidateId = null;
 
@@ -524,6 +684,5 @@ public class CandidatePanel extends JPanel implements ActionListener {
         }
     }
 }
-
 
 
