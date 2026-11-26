@@ -1,43 +1,53 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package GUI;
 
-/**
- *
- * @author annem
- */
-
+import Database.DBConnection;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class VotingConfirmation extends JFrame
-        implements ActionListener {
+public class VotingConfirmation extends JFrame implements ActionListener {
 
-    private JLabel titleLabel, subtitleLabel, successLabel, messageLabel, nameLabel, 
-            idLabel, dateLabel,nameValue, idValue, candidatesLabel;
-    private JPanel mainPanel, headerPanel,checkPanel, voterPanel, circle;
+    private JLabel titleLabel, subtitleLabel, successLabel, messageLabel;
+    private JLabel nameLabel, idLabel, dateLabel, nameValue, idValue;
+    private JLabel candidatesLabel;
+    private JPanel mainPanel, headerPanel, checkPanel, voterPanel, circle;
     private JTextArea candidatesArea;
     private JScrollPane candidateScrollPane;
     private JButton confirmButton;
+
     private Color green = new Color(24, 165, 100);
     private Color blue = new Color(18, 130, 220);
     private Color darkBlue = new Color(15, 61, 120);
     private Color lightBlue = new Color(225, 242, 255);
     private Color borderColor = new Color(190, 215, 240);
 
+    private String voterName;
+    private String voterID;
+    private List<String> selectedCandidates;
+
     public VotingConfirmation(
             String voterName,
             String voterID,
             List<String> selectedCandidates) {
+
+        this.voterName = voterName;
+        this.voterID = voterID;
+        this.selectedCandidates = selectedCandidates == null
+                ? new ArrayList<>()
+                : new ArrayList<>(selectedCandidates);
 
         setTitle("Online Voting System - Vote Confirmation");
         setSize(670, 650);
@@ -48,7 +58,6 @@ public class VotingConfirmation extends JFrame
 
         getContentPane().setBackground(lightBlue);
 
-        // Main panel
         mainPanel = new JPanel();
         mainPanel.setLayout(null);
         mainPanel.setBackground(Color.WHITE);
@@ -56,7 +65,6 @@ public class VotingConfirmation extends JFrame
         mainPanel.setBounds(10, 10, 634, 590);
         add(mainPanel);
 
-        // Header
         headerPanel = new JPanel();
         headerPanel.setLayout(null);
         headerPanel.setBackground(Color.WHITE);
@@ -77,7 +85,6 @@ public class VotingConfirmation extends JFrame
         subtitleLabel.setBounds(10, 35, 574, 25);
         headerPanel.add(subtitleLabel);
 
-        // Green check mark
         checkPanel = new JPanel();
         checkPanel.setLayout(null);
         checkPanel.setBackground(Color.WHITE);
@@ -92,17 +99,19 @@ public class VotingConfirmation extends JFrame
                 Graphics2D g2 = (Graphics2D) g.create();
 
                 g2.setRenderingHint(
-                        RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+                );
 
                 g2.setColor(green);
                 g2.fillOval(10, 5, 95, 95);
 
                 g2.setColor(Color.WHITE);
                 g2.setStroke(new BasicStroke(
-                        7,
-                        BasicStroke.CAP_ROUND,
-                        BasicStroke.JOIN_ROUND));
+                    7,
+                    BasicStroke.CAP_ROUND,
+                    BasicStroke.JOIN_ROUND
+                ));
 
                 int[] x = {35, 52, 82};
                 int[] y = {53, 70, 36};
@@ -116,8 +125,7 @@ public class VotingConfirmation extends JFrame
         circle.setBounds(0, 0, 120, 105);
         checkPanel.add(circle);
 
-        // Success message
-        successLabel = new JLabel("Selections Submitted!");
+        successLabel = new JLabel("Review Your Selections");
         successLabel.setFont(new Font("Arial", Font.BOLD, 23));
         successLabel.setForeground(green);
         successLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -125,14 +133,14 @@ public class VotingConfirmation extends JFrame
         mainPanel.add(successLabel);
 
         messageLabel = new JLabel(
-                "Please review your selected candidates below.");
+            "Please review your selected candidates before confirming."
+        );
         messageLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         messageLabel.setForeground(Color.GRAY);
         messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
         messageLabel.setBounds(30, 205, 574, 25);
         mainPanel.add(messageLabel);
 
-        // Voter information
         voterPanel = new JPanel();
         voterPanel.setLayout(null);
         voterPanel.setBackground(lightBlue);
@@ -164,14 +172,12 @@ public class VotingConfirmation extends JFrame
         idValue.setBounds(130, 38, 410, 20);
         voterPanel.add(idValue);
 
-        // Selected candidates label
         candidatesLabel = new JLabel("YOUR SELECTED CANDIDATES");
         candidatesLabel.setFont(new Font("Arial", Font.BOLD, 14));
         candidatesLabel.setForeground(darkBlue);
         candidatesLabel.setBounds(30, 320, 574, 25);
         mainPanel.add(candidatesLabel);
 
-        // Selected candidates text area
         candidatesArea = new JTextArea();
         candidatesArea.setFont(new Font("Arial", Font.PLAIN, 13));
         candidatesArea.setForeground(darkBlue);
@@ -181,51 +187,200 @@ public class VotingConfirmation extends JFrame
         candidatesArea.setWrapStyleWord(true);
         candidatesArea.setBorder(new EmptyBorder(10, 12, 10, 12));
 
-        if (selectedCandidates != null
-                && !selectedCandidates.isEmpty()) {
-
-            for (String candidate : selectedCandidates) {
+        if (!this.selectedCandidates.isEmpty()) {
+            for (String candidate : this.selectedCandidates) {
                 candidatesArea.append(candidate + "\n\n");
             }
-
         } else {
-            candidatesArea.setText(
-                    "No candidates were provided.");
+            candidatesArea.setText("No candidates were provided.");
         }
 
         candidateScrollPane = new JScrollPane(candidatesArea);
-        candidateScrollPane.setBorder(
-                new LineBorder(borderColor, 1));
+        candidateScrollPane.setBorder(new LineBorder(borderColor));
         candidateScrollPane.setVerticalScrollBarPolicy(
-                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+        );
         candidateScrollPane.setHorizontalScrollBarPolicy(
-                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
         candidateScrollPane.setBounds(30, 350, 574, 130);
         mainPanel.add(candidateScrollPane);
 
-        // Date and time
-        String dateTime = LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-        dateLabel = new JLabel("Date & Time: " + dateTime);
+        dateLabel = new JLabel("Please confirm your selections.");
         dateLabel.setFont(new Font("Arial", Font.PLAIN, 11));
         dateLabel.setForeground(Color.GRAY);
         dateLabel.setBounds(30, 490, 574, 20);
         mainPanel.add(dateLabel);
 
-        // Confirm button
         confirmButton = new JButton("CONFIRM");
         confirmButton.setFont(new Font("Arial", Font.BOLD, 15));
         confirmButton.setForeground(Color.WHITE);
         confirmButton.setBackground(blue);
         confirmButton.setFocusPainted(false);
         confirmButton.setBorderPainted(false);
-        confirmButton.setCursor(
-                new Cursor(Cursor.HAND_CURSOR));
+        confirmButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         confirmButton.setBounds(205, 525, 220, 42);
         mainPanel.add(confirmButton);
 
         confirmButton.addActionListener(this);
+    }
+
+    private List<String> extractCandidateIDs() {
+
+        Set<String> candidateIDs = new LinkedHashSet<>();
+
+        Pattern pattern = Pattern.compile(
+            "^.*?:\\s*([^\\s]+)\\s+-\\s+.*$"
+        );
+
+        for (String candidate : selectedCandidates) {
+
+            Matcher matcher = pattern.matcher(candidate);
+
+            if (matcher.matches()) {
+                candidateIDs.add(matcher.group(1));
+            }
+        }
+
+        return new ArrayList<>(candidateIDs);
+    }
+
+    private boolean saveVotes() {
+
+        List<String> candidateIDs = extractCandidateIDs();
+
+        if (candidateIDs.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                this,
+                "No valid candidate selections were found.",
+                "Invalid Selections",
+                JOptionPane.WARNING_MESSAGE
+            );
+            return false;
+        }
+
+        if (candidateIDs.size() != selectedCandidates.size()) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Some candidate selections could not be identified.",
+                "Invalid Selections",
+                JOptionPane.WARNING_MESSAGE
+            );
+            return false;
+        }
+
+        String electionSQL =
+            "SELECT election_id FROM elections " +
+            "WHERE status = 'ONGOING'";
+
+        String duplicateSQL =
+            "SELECT COUNT(*) FROM votes v " +
+            "INNER JOIN candidates c ON v.candidate_id = c.candidate_id " +
+            "INNER JOIN election_positions ep ON c.position_id = ep.position_id " +
+            "WHERE v.voter_id = ? AND ep.election_id = ?";
+
+        String candidateSQL =
+            "SELECT COUNT(*) FROM candidates c " +
+            "INNER JOIN election_positions ep ON c.position_id = ep.position_id " +
+            "WHERE c.candidate_id = ? AND ep.election_id = ?";
+
+        String insertSQL =
+            "INSERT INTO votes (voter_id, candidate_id, `timestamp`) " +
+            "VALUES (?, ?, CURRENT_TIMESTAMP)";
+
+        try (Connection con = DBConnection.getConnection()) {
+
+            if (con == null) {
+                throw new SQLException("Database connection failed.");
+            }
+
+            con.setAutoCommit(false);
+
+            try {
+                int electionID;
+
+                try (PreparedStatement ps = con.prepareStatement(electionSQL);
+                     ResultSet rs = ps.executeQuery()) {
+
+                    if (!rs.next()) {
+                        throw new SQLException(
+                            "There is no ongoing election."
+                        );
+                    }
+
+                    electionID = rs.getInt("election_id");
+
+                    if (rs.next()) {
+                        throw new SQLException(
+                            "More than one election is marked as ongoing. " +
+                            "Please ask the administrator to check the election status."
+                        );
+                    }
+                }
+
+                try (PreparedStatement ps = con.prepareStatement(duplicateSQL)) {
+
+                    ps.setString(1, voterID);
+                    ps.setInt(2, electionID);
+
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            throw new SQLException(
+                                "You have already submitted your vote for this election."
+                            );
+                        }
+                    }
+                }
+
+                try (PreparedStatement ps = con.prepareStatement(candidateSQL)) {
+
+                    for (String candidateID : candidateIDs) {
+
+                        ps.setString(1, candidateID);
+                        ps.setInt(2, electionID);
+
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (!rs.next() || rs.getInt(1) == 0) {
+                                throw new SQLException(
+                                    "Candidate " + candidateID +
+                                    " does not belong to the ongoing election."
+                                );
+                            }
+                        }
+                    }
+                }
+
+                try (PreparedStatement ps = con.prepareStatement(insertSQL)) {
+
+                    for (String candidateID : candidateIDs) {
+                        ps.setString(1, voterID);
+                        ps.setString(2, candidateID);
+                        ps.addBatch();
+                    }
+
+                    ps.executeBatch();
+                }
+
+                con.commit();
+                return true;
+
+            } catch (SQLException ex) {
+                con.rollback();
+                throw ex;
+
+            } finally {
+                con.setAutoCommit(true);
+            }
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(
+                this,
+                ex.getMessage(),
+                "Voting Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+            return false;
+        }
     }
 
     @Override
@@ -233,44 +388,45 @@ public class VotingConfirmation extends JFrame
 
         if (e.getSource() == confirmButton) {
 
-            VoterDashboard voterDashboard =
-                    new VoterDashboard();
+            int choice = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to submit your votes? " +
+                "You cannot vote again in this election.",
+                "Confirm Votes",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
 
-            voterDashboard.setVisible(true);
-            this.dispose();
-        }
-    }
+            if (choice == JOptionPane.YES_OPTION) {
 
-    // Test the confirmation window
-    public static void main(String[] args) {
+                confirmButton.setEnabled(false);
 
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
+                if (saveVotes()) {
 
-                List<String> sampleCandidates =
-                        new java.util.ArrayList<>();
+                    successLabel.setText("Votes Successfully Submitted!");
+                    messageLabel.setText(
+                        "Your votes have been saved successfully."
+                    );
 
-                sampleCandidates.add(
-                        "SK Chairperson: C001 - Maria Santos (Party List 1)");
+                    dateLabel.setText(
+                        "Your vote has been recorded in the database."
+                    );
 
-                sampleCandidates.add(
-                        "SK Kagawad: C002 - Juan Dela Cruz (Party List 2)");
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Your votes have been submitted successfully!",
+                        "Voting Successful",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
 
-                sampleCandidates.add(
-                        "SK Treasurer: C003 - Ana Garcia (Party List 1)");
+                    VoterDashboard dashboard = new VoterDashboard();
+                    dashboard.setVisible(true);
+                    this.dispose();
 
-                sampleCandidates.add(
-                        "SK Secretary: C004 - Pedro Reyes (Party List 2)");
-
-                VotingConfirmation confirmation =
-                        new VotingConfirmation(
-                                "Sample Voter",
-                                "V001",
-                                sampleCandidates);
-
-                confirmation.setVisible(true);
+                } else {
+                    confirmButton.setEnabled(true);
+                }
             }
-        });
+        }
     }
 }
