@@ -5,24 +5,15 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.awt.event.*;
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class VotingConfirmation extends JFrame implements ActionListener {
 
-    private JLabel titleLabel, subtitleLabel, successLabel, messageLabel;
-    private JLabel nameLabel, idLabel, dateLabel, nameValue, idValue;
-    private JLabel candidatesLabel;
+    private JLabel titleLabel, subtitleLabel, successLabel, messageLabel, 
+                  nameLabel, idLabel, dateLabel, nameValue, idValue, candidatesLabel;
     private JPanel mainPanel, headerPanel, checkPanel, voterPanel, circle;
     private JTextArea candidatesArea;
     private JScrollPane candidateScrollPane;
@@ -36,15 +27,29 @@ public class VotingConfirmation extends JFrame implements ActionListener {
 
     private String voterName;
     private String voterID;
+    private String electionName;
+    private int electionID;
+
+    private List<String> candidateIDs;
     private List<String> selectedCandidates;
 
     public VotingConfirmation(
             String voterName,
             String voterID,
+            int electionID,
+            String electionName,
+            List<String> candidateIDs,
             List<String> selectedCandidates) {
 
         this.voterName = voterName;
         this.voterID = voterID;
+        this.electionID = electionID;
+        this.electionName = electionName;
+
+        this.candidateIDs = candidateIDs == null
+                ? new ArrayList<>()
+                : new ArrayList<>(candidateIDs);
+
         this.selectedCandidates = selectedCandidates == null
                 ? new ArrayList<>()
                 : new ArrayList<>(selectedCandidates);
@@ -145,7 +150,7 @@ public class VotingConfirmation extends JFrame implements ActionListener {
         voterPanel.setLayout(null);
         voterPanel.setBackground(lightBlue);
         voterPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        voterPanel.setBounds(30, 240, 574, 70);
+        voterPanel.setBounds(30, 240, 574, 90);
         mainPanel.add(voterPanel);
 
         nameLabel = new JLabel("Voter Name:");
@@ -172,10 +177,12 @@ public class VotingConfirmation extends JFrame implements ActionListener {
         idValue.setBounds(130, 38, 410, 20);
         voterPanel.add(idValue);
 
-        candidatesLabel = new JLabel("YOUR SELECTED CANDIDATES");
+        candidatesLabel = new JLabel(
+            "YOUR SELECTED CANDIDATES - " + electionName
+        );
         candidatesLabel.setFont(new Font("Arial", Font.BOLD, 14));
         candidatesLabel.setForeground(darkBlue);
-        candidatesLabel.setBounds(30, 320, 574, 25);
+        candidatesLabel.setBounds(30, 340, 574, 25);
         mainPanel.add(candidatesLabel);
 
         candidatesArea = new JTextArea();
@@ -187,12 +194,8 @@ public class VotingConfirmation extends JFrame implements ActionListener {
         candidatesArea.setWrapStyleWord(true);
         candidatesArea.setBorder(new EmptyBorder(10, 12, 10, 12));
 
-        if (!this.selectedCandidates.isEmpty()) {
-            for (String candidate : this.selectedCandidates) {
-                candidatesArea.append(candidate + "\n\n");
-            }
-        } else {
-            candidatesArea.setText("No candidates were provided.");
+        for (String candidate : this.selectedCandidates) {
+            candidatesArea.append(candidate + "\n\n");
         }
 
         candidateScrollPane = new JScrollPane(candidatesArea);
@@ -203,10 +206,12 @@ public class VotingConfirmation extends JFrame implements ActionListener {
         candidateScrollPane.setHorizontalScrollBarPolicy(
             JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         );
-        candidateScrollPane.setBounds(30, 350, 574, 130);
+        candidateScrollPane.setBounds(30, 370, 574, 110);
         mainPanel.add(candidateScrollPane);
 
-        dateLabel = new JLabel("Please confirm your selections.");
+        dateLabel = new JLabel(
+            "Your votes will be final after confirmation."
+        );
         dateLabel.setFont(new Font("Arial", Font.PLAIN, 11));
         dateLabel.setForeground(Color.GRAY);
         dateLabel.setBounds(30, 490, 574, 20);
@@ -223,46 +228,25 @@ public class VotingConfirmation extends JFrame implements ActionListener {
         mainPanel.add(confirmButton);
 
         confirmButton.addActionListener(this);
-    }
 
-    private List<String> extractCandidateIDs() {
-
-        Set<String> candidateIDs = new LinkedHashSet<>();
-
-        Pattern pattern = Pattern.compile(
-            "^.*?:\\s*([^\\s]+)\\s+-\\s+.*$"
-        );
-
-        for (String candidate : selectedCandidates) {
-
-            Matcher matcher = pattern.matcher(candidate);
-
-            if (matcher.matches()) {
-                candidateIDs.add(matcher.group(1));
-            }
+        if (this.candidateIDs.isEmpty() ||
+            this.candidateIDs.size() != this.selectedCandidates.size()) {
+            confirmButton.setEnabled(false);
+            JOptionPane.showMessageDialog(
+                this,
+                "Invalid candidate selections.",
+                "Voting Error",
+                JOptionPane.WARNING_MESSAGE
+            );
         }
-
-        return new ArrayList<>(candidateIDs);
     }
 
     private boolean saveVotes() {
 
-        List<String> candidateIDs = extractCandidateIDs();
-
         if (candidateIDs.isEmpty()) {
             JOptionPane.showMessageDialog(
                 this,
-                "No valid candidate selections were found.",
-                "Invalid Selections",
-                JOptionPane.WARNING_MESSAGE
-            );
-            return false;
-        }
-
-        if (candidateIDs.size() != selectedCandidates.size()) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Some candidate selections could not be identified.",
+                "No candidate selections were found.",
                 "Invalid Selections",
                 JOptionPane.WARNING_MESSAGE
             );
@@ -270,22 +254,27 @@ public class VotingConfirmation extends JFrame implements ActionListener {
         }
 
         String electionSQL =
-            "SELECT election_id FROM elections " +
-            "WHERE status = 'ONGOING'";
+            "SELECT status FROM elections " +
+            "WHERE election_id = ? FOR UPDATE";
 
         String duplicateSQL =
-            "SELECT COUNT(*) FROM votes v " +
-            "INNER JOIN candidates c ON v.candidate_id = c.candidate_id " +
-            "INNER JOIN election_positions ep ON c.position_id = ep.position_id " +
-            "WHERE v.voter_id = ? AND ep.election_id = ?";
+            "SELECT COUNT(*) FROM voter_election_status " +
+            "WHERE voter_id = ? AND election_id = ?";
 
         String candidateSQL =
             "SELECT COUNT(*) FROM candidates c " +
-            "INNER JOIN election_positions ep ON c.position_id = ep.position_id " +
+            "INNER JOIN election_positions ep " +
+            "ON c.position_id = ep.position_id " +
             "WHERE c.candidate_id = ? AND ep.election_id = ?";
 
-        String insertSQL =
-            "INSERT INTO votes (voter_id, candidate_id, `timestamp`) " +
+        String insertVoteSQL =
+            "INSERT INTO votes " +
+            "(voter_id, election_id, candidate_id, `timestamp`) " +
+            "VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
+
+        String insertStatusSQL =
+            "INSERT INTO voter_election_status " +
+            "(voter_id, election_id, voted_at) " +
             "VALUES (?, ?, CURRENT_TIMESTAMP)";
 
         try (Connection con = DBConnection.getConnection()) {
@@ -297,42 +286,59 @@ public class VotingConfirmation extends JFrame implements ActionListener {
             con.setAutoCommit(false);
 
             try {
-                int electionID;
 
-                try (PreparedStatement ps = con.prepareStatement(electionSQL);
-                     ResultSet rs = ps.executeQuery()) {
+                try (PreparedStatement ps =
+                        con.prepareStatement(electionSQL)) {
 
-                    if (!rs.next()) {
-                        throw new SQLException(
-                            "There is no ongoing election."
-                        );
-                    }
-
-                    electionID = rs.getInt("election_id");
-
-                    if (rs.next()) {
-                        throw new SQLException(
-                            "More than one election is marked as ongoing. " +
-                            "Please ask the administrator to check the election status."
-                        );
-                    }
-                }
-
-                try (PreparedStatement ps = con.prepareStatement(duplicateSQL)) {
-
-                    ps.setString(1, voterID);
-                    ps.setInt(2, electionID);
+                    ps.setInt(1, electionID);
 
                     try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next() && rs.getInt(1) > 0) {
+
+                        if (!rs.next()) {
                             throw new SQLException(
-                                "You have already submitted your vote for this election."
+                                "The selected election does not exist."
+                            );
+                        }
+
+                        String status = rs.getString("status");
+
+                        if (status == null ||
+                            !(status.equalsIgnoreCase("ONGOING") ||
+                              status.equalsIgnoreCase("OPEN"))) {
+
+                            throw new SQLException(
+                                "This election is no longer open for voting."
                             );
                         }
                     }
                 }
 
-                try (PreparedStatement ps = con.prepareStatement(candidateSQL)) {
+                try (PreparedStatement ps =
+                        con.prepareStatement(duplicateSQL)) {
+
+                    ps.setString(1, voterID);
+                    ps.setInt(2, electionID);
+
+                    try (ResultSet rs = ps.executeQuery()) {
+
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            throw new SQLException(
+                                "You have already voted in this election."
+                            );
+                        }
+                    }
+                }
+
+                Set<String> uniqueIDs = new HashSet<>(candidateIDs);
+
+                if (uniqueIDs.size() != candidateIDs.size()) {
+                    throw new SQLException(
+                        "Duplicate candidate selections were detected."
+                    );
+                }
+
+                try (PreparedStatement ps =
+                        con.prepareStatement(candidateSQL)) {
 
                     for (String candidateID : candidateIDs) {
 
@@ -340,45 +346,63 @@ public class VotingConfirmation extends JFrame implements ActionListener {
                         ps.setInt(2, electionID);
 
                         try (ResultSet rs = ps.executeQuery()) {
-                            if (!rs.next() || rs.getInt(1) == 0) {
+
+                            if (!rs.next() || rs.getInt(1) != 1) {
                                 throw new SQLException(
                                     "Candidate " + candidateID +
-                                    " does not belong to the ongoing election."
+                                    " does not belong to this election."
                                 );
                             }
                         }
                     }
                 }
 
-                try (PreparedStatement ps = con.prepareStatement(insertSQL)) {
+                try (PreparedStatement ps =
+                        con.prepareStatement(insertVoteSQL)) {
 
                     for (String candidateID : candidateIDs) {
+
                         ps.setString(1, voterID);
-                        ps.setString(2, candidateID);
+                        ps.setInt(2, electionID);
+                        ps.setString(3, candidateID);
+
                         ps.addBatch();
                     }
 
                     ps.executeBatch();
                 }
 
+                try (PreparedStatement ps =
+                        con.prepareStatement(insertStatusSQL)) {
+
+                    ps.setString(1, voterID);
+                    ps.setInt(2, electionID);
+
+                    ps.executeUpdate();
+                }
+
                 con.commit();
                 return true;
 
             } catch (SQLException ex) {
+
                 con.rollback();
                 throw ex;
 
             } finally {
+
                 con.setAutoCommit(true);
             }
 
         } catch (SQLException ex) {
+
             JOptionPane.showMessageDialog(
                 this,
                 ex.getMessage(),
                 "Voting Error",
                 JOptionPane.ERROR_MESSAGE
             );
+
             return false;
         }
     }
@@ -403,7 +427,10 @@ public class VotingConfirmation extends JFrame implements ActionListener {
 
                 if (saveVotes()) {
 
-                    successLabel.setText("Votes Successfully Submitted!");
+                    successLabel.setText(
+                        "Votes Successfully Submitted!"
+                    );
+
                     messageLabel.setText(
                         "Your votes have been saved successfully."
                     );
@@ -419,9 +446,11 @@ public class VotingConfirmation extends JFrame implements ActionListener {
                         JOptionPane.INFORMATION_MESSAGE
                     );
 
-                    VoterDashboard dashboard = new VoterDashboard();
+                    VoterDashboard dashboard =
+                        new VoterDashboard(voterName, voterID);
+
                     dashboard.setVisible(true);
-                    this.dispose();
+                    dispose();
 
                 } else {
                     confirmButton.setEnabled(true);
@@ -430,3 +459,4 @@ public class VotingConfirmation extends JFrame implements ActionListener {
         }
     }
 }
+
