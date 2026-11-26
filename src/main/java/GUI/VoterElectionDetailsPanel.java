@@ -10,7 +10,11 @@ import javax.swing.border.*;
 
 public class VoterElectionDetailsPanel extends JPanel implements ActionListener {
 
-    private String voterName, voterID, electionName, description, electionStatus;
+    private String voterName;
+    private String voterID;
+    private String electionName;
+    private String description;
+    private String electionStatus;
 
     private int electionID;
 
