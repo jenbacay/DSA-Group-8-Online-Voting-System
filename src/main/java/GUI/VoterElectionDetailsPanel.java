@@ -48,9 +48,28 @@ public class VoterElectionDetailsPanel extends JPanel implements ActionListener 
         headerPanel.setBackground(new Color(20, 55, 85));
         headerPanel.setBounds(0, 0, 900, 100);
 
-        backButton = new JButton("Back");
+        backButton = new JButton("←  Back");
         backButton.setBounds(25, 30, 100, 35);
+        backButton.setFont(new Font("Arial", Font.BOLD, 15));
+        backButton.setForeground(Color.WHITE);
+        backButton.setBackground(new Color(20, 55, 85));
+        backButton.setBorderPainted(false);
+        backButton.setFocusPainted(false);
+        backButton.setContentAreaFilled(false);
+        backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         backButton.addActionListener(this);
+
+        backButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                backButton.setForeground(new Color(180, 210, 240));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                backButton.setForeground(Color.WHITE);
+            }
+        });
 
         JLabel titleLabel = new JLabel("ELECTION DETAILS");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 23));
@@ -291,7 +310,9 @@ public class VoterElectionDetailsPanel extends JPanel implements ActionListener 
 
         if (e.getSource() == backButton) {
 
-            backAction.run();
+            if (backAction != null) {
+                backAction.run();
+            }
 
         } else if (e.getSource() == candidatesButton) {
 
@@ -307,4 +328,6 @@ public class VoterElectionDetailsPanel extends JPanel implements ActionListener 
         }
     }
 }
+
+
 
