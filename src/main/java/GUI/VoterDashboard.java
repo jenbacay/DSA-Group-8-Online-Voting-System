@@ -1,260 +1,328 @@
 package GUI;
 
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.BasicStroke;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import Database.DBConnection;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+import java.time.LocalDateTime;
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
+import javax.swing.border.*;
 
 public class VoterDashboard extends JFrame implements ActionListener {
-
-    private JLabel titleLabel, subtitleLabel, welcomeLabel, voterIdLabel;
-    private JButton candidatesButton, voteButton, resultsButton, logoutButton;
-    private JPanel mainPanel;
 
     private String voterName;
     private String voterID;
 
-    private final Color darkBlue = new Color(20, 55, 85);
-    private final Color lightBlue = new Color(230, 242, 255);
+    private JPanel mainPanel, headerPanel, contentPanel, electionPanel;
+    private JButton logoutButton, refreshButton;
 
-    public VoterDashboard() {
-        this("Voter", "Not provided");
-    }
+    private CardLayout cardLayout;
+
+    private static final String DASHBOARD = "DASHBOARD";
+    private static final String DETAILS = "DETAILS";
 
     public VoterDashboard(String voterName, String voterID) {
 
-        this.voterName = voterName == null || voterName.trim().isEmpty()
-                ? "Voter" : voterName.trim();
-
-        this.voterID = voterID == null || voterID.trim().isEmpty()
-                ? "ID not received" : voterID.trim();
+        this.voterName = voterName;
+        this.voterID = voterID;
 
         setTitle("Voter Dashboard");
-        setSize(500, 600);
+        setSize(900, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
-        setLayout(null);
 
-        getContentPane().setBackground(lightBlue);
+        cardLayout = new CardLayout();
 
-        mainPanel = new JPanel();
-        mainPanel.setLayout(null);
-        mainPanel.setBounds(35, 25, 415, 515);
-        mainPanel.setBackground(Color.WHITE);
-        mainPanel.setBorder(new LineBorder(new Color(190, 215, 240), 1));
+        mainPanel = new JPanel(cardLayout);
+        mainPanel.setBackground(new Color(240, 246, 252));
+
+        createDashboard();
+        mainPanel.add(createDetailsContainer(), DETAILS);
+
         add(mainPanel);
 
-        titleLabel = new JLabel("ONLINE VOTING SYSTEM");
-        titleLabel.setBounds(35, 25, 345, 35);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 22));
-        titleLabel.setForeground(darkBlue);
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titleLabel);
+        loadElections();
 
-        subtitleLabel = new JLabel("VOTER DASHBOARD");
-        subtitleLabel.setBounds(35, 60, 345, 20);
-        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 13));
-        subtitleLabel.setForeground(Color.GRAY);
-        subtitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(subtitleLabel);
-
-        welcomeLabel = new JLabel("Welcome, " + this.voterName + "!");
-        welcomeLabel.setBounds(25, 105, 365, 30);
-        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 19));
-        welcomeLabel.setForeground(darkBlue);
-        welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(welcomeLabel);
-
-        voterIdLabel = new JLabel("VOTER ID: " + this.voterID);
-        voterIdLabel.setBounds(25, 140, 365, 25);
-        voterIdLabel.setFont(new Font("Arial", Font.PLAIN, 13));
-        voterIdLabel.setForeground(Color.GRAY);
-        voterIdLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(voterIdLabel);
-
-        candidatesButton = createButton(
-                "LIST OF CANDIDATES",
-                65, 195,
-                new Color(35, 125, 225),
-                "candidates"
-        );
-
-        voteButton = createButton(
-                "CAST VOTE",
-                65, 265,
-                new Color(20, 170, 105),
-                "vote"
-        );
-
-        resultsButton = createButton(
-                "ELECTION RESULTS",
-                65, 335,
-                new Color(115, 75, 210),
-                "results"
-        );
-
-        logoutButton = createButton(
-                "LOG OUT",
-                65, 425,
-                new Color(220, 70, 70),
-                "logout"
-        );
+        setVisible(true);
     }
 
-    private JButton createButton(String text, int x, int y,
-            Color color, String iconType) {
+    private void createDashboard() {
 
-        JButton button = new JButton(text);
+        JPanel dashboardPanel = new JPanel(null);
+        dashboardPanel.setBackground(new Color(240, 246, 252));
 
-        button.setBounds(x, y, 285, 50);
-        button.setFont(new Font("Arial", Font.BOLD, 14));
-        button.setForeground(Color.WHITE);
-        button.setBackground(color);
-        button.setIcon(new DashboardIcon(iconType));
-        button.setIconTextGap(18);
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setBorder(new EmptyBorder(5, 20, 5, 10));
-        button.setFocusPainted(false);
-        button.setBorderPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.addActionListener(this);
+        headerPanel = new JPanel(null);
+        headerPanel.setBackground(new Color(20, 55, 85));
+        headerPanel.setBounds(0, 0, 900, 100);
 
-        mainPanel.add(button);
+        JLabel titleLabel = new JLabel("VOTER DASHBOARD");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setBounds(30, 15, 400, 35);
 
-        return button;
+        JLabel welcomeLabel = new JLabel(
+                "Welcome, " + voterName + " | Voter ID: " + voterID
+        );
+        welcomeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        welcomeLabel.setForeground(Color.WHITE);
+        welcomeLabel.setBounds(32, 55, 500, 25);
+
+        logoutButton = new JButton("Logout");
+        logoutButton.setBounds(770, 30, 100, 35);
+        logoutButton.addActionListener(this);
+        logoutButton.setBackground(new Color(220, 65, 65));
+        logoutButton.setForeground(Color.WHITE);
+        logoutButton.setFocusPainted(false);
+        logoutButton.setBorderPainted(false);
+
+        headerPanel.add(titleLabel);
+        headerPanel.add(welcomeLabel);
+        headerPanel.add(logoutButton);
+
+        JLabel sectionLabel = new JLabel("MY AVAILABLE ELECTIONS");
+        sectionLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        sectionLabel.setForeground(new Color(20, 55, 85));
+        sectionLabel.setBounds(35, 125, 400, 35);
+
+        refreshButton = new JButton("Refresh");
+        refreshButton.setBounds(745, 125, 110, 35);
+        refreshButton.addActionListener(this);
+
+        electionPanel = new JPanel();
+        electionPanel.setLayout(new BoxLayout(electionPanel, BoxLayout.Y_AXIS));
+        electionPanel.setBackground(new Color(240, 246, 252));
+        electionPanel.setBorder(new EmptyBorder(10, 5, 10, 5));
+
+        JScrollPane scrollPane = new JScrollPane(electionPanel);
+        scrollPane.setBounds(30, 175, 825, 400);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        dashboardPanel.add(headerPanel);
+        dashboardPanel.add(sectionLabel);
+        dashboardPanel.add(refreshButton);
+        dashboardPanel.add(scrollPane);
+
+        mainPanel.add(dashboardPanel, DASHBOARD);
     }
 
-    private class DashboardIcon implements Icon {
+    private JPanel createDetailsContainer() {
 
-        private String type;
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(240, 246, 252));
 
-        public DashboardIcon(String type) {
-            this.type = type;
-        }
+        return panel;
+    }
 
-        @Override
-        public int getIconWidth() {
-            return 25;
-        }
+    private void loadElections() {
 
-        @Override
-        public int getIconHeight() {
-            return 25;
-        }
+        electionPanel.removeAll();
 
-        @Override
-        public void paintIcon(java.awt.Component component,
-                Graphics graphics, int x, int y) {
+        String sql = "SELECT election_id, election_name, description, "
+                   + "start_datetime, end_datetime, status "
+                   + "FROM elections ORDER BY start_datetime DESC";
 
-            Graphics2D g2 = (Graphics2D) graphics.create();
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql);
+             ResultSet rs = pst.executeQuery()) {
 
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON
-            );
+            int count = 0;
 
-            g2.setColor(Color.WHITE);
-            g2.setStroke(new BasicStroke(
-                    2.2f,
-                    BasicStroke.CAP_ROUND,
-                    BasicStroke.JOIN_ROUND
-            ));
+            while (rs.next()) {
 
-            switch (type) {
+                int electionID = rs.getInt("election_id");
+                String name = rs.getString("election_name");
+                String description = rs.getString("description");
+                LocalDateTime start = rs.getTimestamp(
+                        "start_datetime").toLocalDateTime();
+                LocalDateTime end = rs.getTimestamp(
+                        "end_datetime").toLocalDateTime();
+                String status = rs.getString("status");
 
-                case "candidates":
-                    g2.drawOval(x + 8, y + 2, 9, 9);
-                    g2.drawArc(x + 4, y + 12, 17, 12, 0, 180);
-                    g2.drawOval(x + 1, y + 6, 6, 6);
-                    g2.drawArc(x - 1, y + 14, 10, 9, 0, 180);
-                    break;
+                String displayStatus = getElectionStatus(
+                        status, start, end
+                );
 
-                case "vote":
-                    int[] xPoints = {
-                        x + 12, x + 22, x + 12, x + 2
-                    };
+                electionPanel.add(createElectionCard(
+                        electionID,
+                        name,
+                        description,
+                        displayStatus
+                ));
 
-                    int[] yPoints = {
-                        y + 2, y + 12, y + 22, y + 12
-                    };
+                electionPanel.add(Box.createVerticalStrut(15));
 
-                    g2.drawPolygon(xPoints, yPoints, 4);
-                    g2.drawLine(x + 7, y + 12, x + 11, y + 16);
-                    g2.drawLine(x + 11, y + 16, x + 18, y + 8);
-                    break;
-
-                case "results":
-                    g2.drawLine(x + 3, y + 22, x + 23, y + 22);
-                    g2.drawLine(x + 5, y + 22, x + 5, y + 14);
-                    g2.drawLine(x + 11, y + 22, x + 11, y + 9);
-                    g2.drawLine(x + 17, y + 22, x + 17, y + 4);
-                    g2.drawLine(x + 23, y + 22, x + 23, y + 11);
-                    break;
-
-                case "logout":
-                    g2.drawRoundRect(x + 2, y + 3, 13, 19, 2, 2);
-                    g2.drawLine(x + 11, y + 12, x + 23, y + 12);
-                    g2.drawLine(x + 18, y + 7, x + 23, y + 12);
-                    g2.drawLine(x + 18, y + 17, x + 23, y + 12);
-                    break;
+                count++;
             }
 
-            g2.dispose();
+            if (count == 0) {
+
+                JLabel emptyLabel = new JLabel(
+                        "No elections available at the moment."
+                );
+
+                emptyLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+                emptyLabel.setForeground(Color.GRAY);
+
+                electionPanel.add(emptyLabel);
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Unable to load elections: " + ex.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
+
+        electionPanel.revalidate();
+        electionPanel.repaint();
+    }
+
+    private String getElectionStatus(
+            String status,
+            LocalDateTime start,
+            LocalDateTime end) {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if ("ENDED".equals(status) || !now.isBefore(end)) {
+            return "CLOSED";
+        }
+
+        if ("NOT STARTED".equals(status) || now.isBefore(start)) {
+            return "UPCOMING";
+        }
+
+        if ("ONGOING".equals(status)
+                && !now.isBefore(start)
+                && now.isBefore(end)) {
+            return "OPEN";
+        }
+
+        return "UPCOMING";
+    }
+
+    private JPanel createElectionCard(
+            int electionID,
+            String name,
+            String description,
+            String status) {
+
+        JPanel card = new JPanel(null);
+
+        card.setPreferredSize(new Dimension(790, 155));
+        card.setMaximumSize(new Dimension(790, 155));
+        card.setMinimumSize(new Dimension(790, 155));
+
+        card.setBackground(Color.WHITE);
+        card.setBorder(new LineBorder(
+                new Color(210, 220, 230), 1, true
+        ));
+
+        JLabel nameLabel = new JLabel(name);
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 19));
+        nameLabel.setForeground(new Color(20, 55, 85));
+        nameLabel.setBounds(20, 15, 550, 30);
+
+        JLabel descriptionLabel = new JLabel(
+                description == null ? "" : description
+        );
+        descriptionLabel.setFont(new Font("Arial", Font.PLAIN, 13));
+        descriptionLabel.setForeground(Color.GRAY);
+        descriptionLabel.setBounds(20, 50, 550, 25);
+
+        JLabel statusLabel = new JLabel(status);
+        statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        statusLabel.setBounds(20, 90, 150, 25);
+
+        if (status.equals("OPEN")) {
+            statusLabel.setForeground(new Color(20, 160, 90));
+        } else if (status.equals("UPCOMING")) {
+            statusLabel.setForeground(new Color(230, 150, 20));
+        } else {
+            statusLabel.setForeground(new Color(200, 65, 65));
+        }
+
+        JButton viewButton = new JButton(
+                status.equals("CLOSED") ? "VIEW RESULTS" : "VIEW ELECTION"
+        );
+
+        viewButton.setBounds(610, 55, 155, 40);
+        viewButton.setBackground(new Color(35, 125, 225));
+        viewButton.setForeground(Color.WHITE);
+        viewButton.setFocusPainted(false);
+        viewButton.setBorderPainted(false);
+
+        viewButton.addActionListener(e -> openElection(
+                electionID, name, description, status
+        ));
+
+        card.add(nameLabel);
+        card.add(descriptionLabel);
+        card.add(statusLabel);
+        card.add(viewButton);
+
+        return card;
+    }
+
+    private void openElection(
+            int electionID,
+            String name,
+            String description,
+            String status) {
+
+        VoterElectionDetailsPanel detailsPanel =
+                new VoterElectionDetailsPanel(
+                        voterName,
+                        voterID,
+                        electionID,
+                        name,
+                        description,
+                        status,
+                        () -> {
+                            cardLayout.show(mainPanel, DASHBOARD);
+                            loadElections();
+                        }
+                );
+
+        JPanel detailsContainer = (JPanel) mainPanel.getComponent(1);
+
+        detailsContainer.removeAll();
+        detailsContainer.add(detailsPanel, BorderLayout.CENTER);
+
+        detailsContainer.revalidate();
+        detailsContainer.repaint();
+
+        cardLayout.show(mainPanel, DETAILS);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
 
-        if (e.getSource() == candidatesButton) {
-
-            VoterCandidatePanel panel =
-                    new VoterCandidatePanel(voterName, voterID);
-
-            panel.setVisible(true);
-            dispose();
-
-        } else if (e.getSource() == voteButton) {
-
-            CastVotePanel panel =
-                    new CastVotePanel(voterName, voterID);
-
-            panel.setVisible(true);
-            dispose();
-
-        } else if (e.getSource() == resultsButton) {
-
-            VoterElectionResultsPanel panel =
-                    new VoterElectionResultsPanel(voterName, voterID);
-
-            panel.setVisible(true);
-            dispose();
-
-        } else if (e.getSource() == logoutButton) {
+        if (e.getSource() == logoutButton) {
 
             int choice = JOptionPane.showConfirmDialog(
                     this,
-                    "Are you sure you want to log out?",
-                    "Confirm Logout",
+                    "Are you sure you want to logout?",
+                    "Logout",
                     JOptionPane.YES_NO_OPTION
             );
 
             if (choice == JOptionPane.YES_OPTION) {
-                LoginPanel login = new LoginPanel();
-                login.setVisible(true);
                 dispose();
+                new LoginPanel();
             }
+
+        } else if (e.getSource() == refreshButton) {
+
+            loadElections();
         }
     }
 }
+
 
 
