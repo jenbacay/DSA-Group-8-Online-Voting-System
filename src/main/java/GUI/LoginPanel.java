@@ -240,7 +240,7 @@ public class LoginPanel extends JFrame implements ActionListener {
                                     return;
                                 }
 
-                                VoterDashboard dashboard =new VoterDashboard();
+                                VoterDashboard dashboard =new VoterDashboard(voterName, voterID);
                                 dashboard.setVisible(true);
                                 this.dispose();
                             }
