@@ -1,13 +1,5 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package GUI;
 
-/**
- *
- * @author annem
- */
 import Database.DBConnection;
 import java.awt.Color;
 import java.awt.Font;
@@ -17,7 +9,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
@@ -29,6 +20,7 @@ public class VoteRecordsPanel extends JPanel implements ActionListener {
     private JButton searchButton, clearButton, refreshButton;
     private JTable voteTable;
     private DefaultTableModel tableModel;
+
     private final Color darkBlue = new Color(20, 55, 85);
     private final Color background = new Color(240, 246, 252);
     private final Color buttonColor = new Color(220, 233, 245);
@@ -77,19 +69,13 @@ public class VoteRecordsPanel extends JPanel implements ActionListener {
         voteTable = new JTable(tableModel);
         voteTable.setFont(new Font("Arial", Font.PLAIN, 12));
         voteTable.setRowHeight(25);
-        voteTable.setSelectionMode(
-                ListSelectionModel.SINGLE_SELECTION);
-
-        voteTable.getTableHeader().setFont(
-                new Font("Arial", Font.BOLD, 12));
-
+        voteTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        voteTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         voteTable.getTableHeader().setReorderingAllowed(false);
 
         JScrollPane scrollPane = new JScrollPane(voteTable);
         scrollPane.setBounds(25, 140, 655, 375);
-        scrollPane.setBorder(new LineBorder(
-                new Color(125, 145, 165)));
-
+        scrollPane.setBorder(new LineBorder(new Color(125, 145, 165)));
         add(scrollPane);
 
         searchButton.addActionListener(this);
@@ -103,14 +89,12 @@ public class VoteRecordsPanel extends JPanel implements ActionListener {
     private JButton createButton(String text, int x) {
 
         JButton button = new JButton(text);
-
         button.setBounds(x, 82, 90, 32);
         button.setFont(new Font("Arial", Font.BOLD, 12));
         button.setForeground(darkBlue);
         button.setBackground(buttonColor);
         button.setFocusPainted(false);
-        button.setBorder(new LineBorder(
-                new Color(150, 170, 190)));
+        button.setBorder(new LineBorder(new Color(150, 170, 190)));
 
         add(button);
 
@@ -125,19 +109,17 @@ public class VoteRecordsPanel extends JPanel implements ActionListener {
                    + "FROM votes "
                    + "WHERE CAST(vote_id AS CHAR) LIKE ? "
                    + "OR voter_id LIKE ? "
-                   + "OR CAST(candidate_id AS CHAR) LIKE ? "
+                   + "OR candidate_id LIKE ? "
                    + "ORDER BY timestamp DESC";
 
         try (Connection con = DBConnection.getConnection()) {
 
             if (con == null) {
-
                 JOptionPane.showMessageDialog(
                         this,
                         "Could not connect to the database.",
                         "Database Error",
                         JOptionPane.ERROR_MESSAGE);
-
                 return;
             }
 
@@ -156,7 +138,7 @@ public class VoteRecordsPanel extends JPanel implements ActionListener {
                         tableModel.addRow(new Object[]{
                             rs.getInt("vote_id"),
                             rs.getString("voter_id"),
-                            rs.getInt("candidate_id"),
+                            rs.getString("candidate_id"),
                             rs.getTimestamp("timestamp")
                         });
                     }
