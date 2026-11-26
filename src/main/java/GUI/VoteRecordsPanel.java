@@ -72,6 +72,8 @@ public class VoteRecordsPanel extends JPanel implements ActionListener {
         voteTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         voteTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         voteTable.getTableHeader().setReorderingAllowed(false);
+        voteTable.getTableHeader().setBackground(darkBlue);
+        voteTable.getTableHeader().setForeground(Color.WHITE);
 
         JScrollPane scrollPane = new JScrollPane(voteTable);
         scrollPane.setBounds(25, 140, 655, 375);
@@ -180,3 +182,4 @@ public class VoteRecordsPanel extends JPanel implements ActionListener {
         }
     }
 }
+
