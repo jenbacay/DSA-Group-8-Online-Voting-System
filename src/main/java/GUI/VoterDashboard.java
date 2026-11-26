@@ -85,11 +85,15 @@ public class VoterDashboard extends JFrame implements ActionListener {
         sectionLabel.setForeground(new Color(20, 55, 85));
         sectionLabel.setBounds(35, 125, 400, 35);
 
-        refreshButton = new JButton("↻  Refresh");
+        refreshButton = new JButton("Refresh");
         refreshButton.setBounds(745, 125, 110, 35);
         refreshButton.setFont(new Font("Arial", Font.BOLD, 14));
         refreshButton.setForeground(new Color(20, 90, 150));
         refreshButton.setBackground(new Color(240, 246, 252));
+        refreshButton.setIcon(
+                new RefreshIcon(new Color(20, 90, 150))
+        );
+        refreshButton.setIconTextGap(8);
         refreshButton.setBorderPainted(false);
         refreshButton.setFocusPainted(false);
         refreshButton.setContentAreaFilled(false);
@@ -100,16 +104,24 @@ public class VoterDashboard extends JFrame implements ActionListener {
             @Override
             public void mouseEntered(MouseEvent e) {
                 refreshButton.setForeground(new Color(35, 125, 225));
+                refreshButton.setIcon(
+                        new RefreshIcon(new Color(35, 125, 225))
+                );
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
                 refreshButton.setForeground(new Color(20, 90, 150));
+                refreshButton.setIcon(
+                        new RefreshIcon(new Color(20, 90, 150))
+                );
             }
         });
 
         electionPanel = new JPanel();
-        electionPanel.setLayout(new BoxLayout(electionPanel, BoxLayout.Y_AXIS));
+        electionPanel.setLayout(
+                new BoxLayout(electionPanel, BoxLayout.Y_AXIS)
+        );
         electionPanel.setBackground(new Color(240, 246, 252));
         electionPanel.setBorder(new EmptyBorder(10, 5, 10, 5));
 
@@ -154,15 +166,21 @@ public class VoterDashboard extends JFrame implements ActionListener {
                 String name = rs.getString("election_name");
                 String description = rs.getString("description");
 
-                Timestamp startTimestamp = rs.getTimestamp("start_datetime");
-                Timestamp endTimestamp = rs.getTimestamp("end_datetime");
+                Timestamp startTimestamp =
+                        rs.getTimestamp("start_datetime");
+
+                Timestamp endTimestamp =
+                        rs.getTimestamp("end_datetime");
 
                 if (startTimestamp == null || endTimestamp == null) {
                     continue;
                 }
 
-                LocalDateTime start = startTimestamp.toLocalDateTime();
-                LocalDateTime end = endTimestamp.toLocalDateTime();
+                LocalDateTime start =
+                        startTimestamp.toLocalDateTime();
+
+                LocalDateTime end =
+                        endTimestamp.toLocalDateTime();
 
                 String status = rs.getString("status");
 
@@ -188,7 +206,10 @@ public class VoterDashboard extends JFrame implements ActionListener {
                         "No elections available at the moment."
                 );
 
-                emptyLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+                emptyLabel.setFont(
+                        new Font("Arial", Font.PLAIN, 16)
+                );
+
                 emptyLabel.setForeground(Color.GRAY);
 
                 electionPanel.add(emptyLabel);
@@ -219,7 +240,8 @@ public class VoterDashboard extends JFrame implements ActionListener {
             return "CLOSED";
         }
 
-        if ("NOT STARTED".equalsIgnoreCase(status) || now.isBefore(start)) {
+        if ("NOT STARTED".equalsIgnoreCase(status)
+                || now.isBefore(start)) {
             return "UPCOMING";
         }
 
@@ -257,7 +279,11 @@ public class VoterDashboard extends JFrame implements ActionListener {
         JLabel descriptionLabel = new JLabel(
                 description == null ? "" : description
         );
-        descriptionLabel.setFont(new Font("Arial", Font.PLAIN, 13));
+
+        descriptionLabel.setFont(
+                new Font("Arial", Font.PLAIN, 13)
+        );
+
         descriptionLabel.setForeground(Color.GRAY);
         descriptionLabel.setBounds(20, 50, 550, 25);
 
@@ -274,7 +300,9 @@ public class VoterDashboard extends JFrame implements ActionListener {
         }
 
         JButton viewButton = new JButton(
-                status.equals("CLOSED") ? "VIEW RESULTS" : "VIEW ELECTION"
+                status.equals("CLOSED")
+                        ? "VIEW RESULTS"
+                        : "VIEW ELECTION"
         );
 
         viewButton.setBounds(610, 55, 155, 40);
@@ -315,7 +343,8 @@ public class VoterDashboard extends JFrame implements ActionListener {
                         }
                 );
 
-        JPanel detailsContainer = (JPanel) mainPanel.getComponent(1);
+        JPanel detailsContainer =
+                (JPanel) mainPanel.getComponent(1);
 
         detailsContainer.removeAll();
         detailsContainer.add(detailsPanel, BorderLayout.CENTER);
@@ -346,6 +375,73 @@ public class VoterDashboard extends JFrame implements ActionListener {
         } else if (e.getSource() == refreshButton) {
 
             loadElections();
+        }
+    }
+
+    private class RefreshIcon implements Icon {
+
+        private Color color;
+
+        public RefreshIcon(Color color) {
+            this.color = color;
+        }
+
+        @Override
+        public int getIconWidth() {
+            return 20;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return 20;
+        }
+
+        @Override
+        public void paintIcon(
+                Component c,
+                Graphics g,
+                int x,
+                int y) {
+
+            Graphics2D g2 = (Graphics2D) g.create();
+
+            g2.setRenderingHint(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+            );
+
+            g2.setColor(color);
+
+            g2.setStroke(new BasicStroke(
+                    2.2f,
+                    BasicStroke.CAP_ROUND,
+                    BasicStroke.JOIN_ROUND
+            ));
+
+            g2.drawArc(
+                    x + 3,
+                    y + 3,
+                    14,
+                    14,
+                    45,
+                    285
+            );
+
+            int[] arrowX = {
+                x + 14,
+                x + 19,
+                x + 17
+            };
+
+            int[] arrowY = {
+                y + 2,
+                y + 5,
+                y + 9
+            };
+
+            g2.fillPolygon(arrowX, arrowY, 3);
+
+            g2.dispose();
         }
     }
 }
