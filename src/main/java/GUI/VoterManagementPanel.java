@@ -17,7 +17,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
     private JLabel titleLabel, firstNameLabel, lastNameLabel, usernameLabel, emailLabel;
     private JTextField firstNameField, lastNameField, usernameField, emailField;
-    private JButton updateButton, deleteButton, clearButton;
+    private JButton updateButton, deleteButton, clearButton, refreshButton;
     private JTable voterTable;
     private DefaultTableModel tableModel;
     private final Color darkBlue = new Color(20, 55, 85);
@@ -43,6 +43,8 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
         usernameLabel = createLabel("Username:", 25, 110, 100);
         usernameField = createTextField(125, 107, 190);
+        usernameField.setEditable(false);
+        usernameField.setBackground(new Color(230, 230, 230));
 
         emailLabel = createLabel("Email:", 350, 110, 100);
         emailField = createTextField(450, 107, 220);
@@ -50,6 +52,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         updateButton = createButton("Update", 25);
         deleteButton = createButton("Delete", 125);
         clearButton = createButton("Clear", 225);
+        refreshButton = createButton("Refresh", 325);
 
         tableModel = new DefaultTableModel(
                 new String[]{
@@ -86,13 +89,15 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
         JScrollPane scrollPane = new JScrollPane(voterTable);
         scrollPane.setBounds(25, 205, 655, 320);
-        scrollPane.setBorder(new LineBorder(new Color(125, 145, 165)));
+        scrollPane.setBorder(
+                new LineBorder(new Color(125, 145, 165)));
 
         add(scrollPane);
 
         updateButton.addActionListener(this);
         deleteButton.addActionListener(this);
         clearButton.addActionListener(this);
+        refreshButton.addActionListener(this);
 
         voterTable.getSelectionModel().addListSelectionListener(e -> {
 
@@ -111,8 +116,10 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
                     usernameField.setText(
                             tableModel.getValueAt(row, 3).toString());
 
+                    Object email = tableModel.getValueAt(row, 4);
+
                     emailField.setText(
-                            tableModel.getValueAt(row, 4).toString());
+                            email == null ? "" : email.toString());
                 }
             }
         });
@@ -167,13 +174,13 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         tableModel.setRowCount(0);
 
         String sql = "SELECT v.voter_id, v.first_name, "
-                   + "v.last_name, a.username, v.email, "
-                   + "v.registered "
-                   + "FROM voters v "
-                   + "INNER JOIN accounts a "
-                   + "ON v.account_id = a.account_id "
-                   + "WHERE a.role = 'VOTER' "
-                   + "ORDER BY v.voter_id";
+                + "v.last_name, a.username, v.email, "
+                + "v.registered "
+                + "FROM voters v "
+                + "INNER JOIN accounts a "
+                + "ON v.account_id = a.account_id "
+                + "WHERE a.role = 'VOTER' "
+                + "ORDER BY v.voter_id";
 
         try (Connection con = DBConnection.getConnection()) {
 
@@ -217,9 +224,9 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
             String currentVoterID) throws SQLException {
 
         String sql = "SELECT COUNT(*) FROM voters "
-                   + "WHERE LOWER(TRIM(first_name)) = LOWER(?) "
-                   + "AND LOWER(TRIM(last_name)) = LOWER(?) "
-                   + "AND voter_id <> ?";
+                + "WHERE LOWER(TRIM(first_name)) = LOWER(?) "
+                + "AND LOWER(TRIM(last_name)) = LOWER(?) "
+                + "AND voter_id <> ?";
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
 
@@ -274,7 +281,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
         String updateAccountSQL =
                 "UPDATE accounts SET full_name = ?, email = ? "
-                + "WHERE account_id = ?";
+                + "WHERE account_id = ? AND role = 'VOTER'";
 
         String updateVoterSQL =
                 "UPDATE voters SET first_name = ?, "
@@ -300,7 +307,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
                     showWarning(
                             "Another voter already has this "
                             + "first name and last name.");
-
                     return;
                 }
 
@@ -329,7 +335,12 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
                     ps.setString(2, email);
                     ps.setInt(3, accountID);
 
-                    ps.executeUpdate();
+                    int updated = ps.executeUpdate();
+
+                    if (updated != 1) {
+                        throw new SQLException(
+                                "Could not update voter account.");
+                    }
                 }
 
                 try (PreparedStatement ps =
@@ -340,7 +351,12 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
                     ps.setString(3, email);
                     ps.setString(4, voterID);
 
-                    ps.executeUpdate();
+                    int updated = ps.executeUpdate();
+
+                    if (updated != 1) {
+                        throw new SQLException(
+                                "Could not update voter information.");
+                    }
                 }
 
                 con.commit();
@@ -371,7 +387,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
             showError("Database error: " + e.getMessage());
         }
     }
-    
+
     private void deleteVoter() {
 
         int row = voterTable.getSelectedRow();
@@ -395,12 +411,12 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
             return;
         }
 
-        String sql =
+        String checkVotesSQL =
+                "SELECT COUNT(*) FROM votes WHERE voter_id = ?";
+
+        String deleteAccountSQL =
                 "DELETE FROM accounts "
-                + "WHERE account_id = "
-                + "(SELECT account_id FROM "
-                + "(SELECT account_id FROM voters "
-                + "WHERE voter_id = ?) AS selected_voter)";
+                + "WHERE account_id = ? AND role = 'VOTER'";
 
         try (Connection con = DBConnection.getConnection()) {
 
@@ -409,31 +425,84 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
                 return;
             }
 
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
+            con.setAutoCommit(false);
 
-                ps.setString(1, voterID);
+            try {
 
-                int deleted = ps.executeUpdate();
+                try (PreparedStatement ps =
+                        con.prepareStatement(checkVotesSQL)) {
 
-                if (deleted > 0) {
+                    ps.setString(1, voterID);
 
-                    JOptionPane.showMessageDialog(
-                            this, "Voter deleted successfully!");
+                    try (ResultSet rs = ps.executeQuery()) {
 
-                    clearFields();
-                    loadVoters();
+                        if (rs.next() && rs.getInt(1) > 0) {
 
-                } else {
-                    showWarning("Voter not found.");
+                            con.rollback();
+
+                            showWarning(
+                                    "This voter already has recorded "
+                                    + "votes and cannot be deleted.");
+
+                            return;
+                        }
+                    }
                 }
+
+                int accountID;
+
+                String getAccountSQL =
+                        "SELECT account_id FROM voters "
+                        + "WHERE voter_id = ?";
+
+                try (PreparedStatement ps =
+                        con.prepareStatement(getAccountSQL)) {
+
+                    ps.setString(1, voterID);
+
+                    try (ResultSet rs = ps.executeQuery()) {
+
+                        if (!rs.next()) {
+                            throw new SQLException(
+                                    "Voter was not found.");
+                        }
+
+                        accountID = rs.getInt("account_id");
+                    }
+                }
+
+                try (PreparedStatement ps =
+                        con.prepareStatement(deleteAccountSQL)) {
+
+                    ps.setInt(1, accountID);
+
+                    int deleted = ps.executeUpdate();
+
+                    if (deleted != 1) {
+                        throw new SQLException(
+                                "Could not delete voter account.");
+                    }
+                }
+
+                con.commit();
+
+                JOptionPane.showMessageDialog(
+                        this, "Voter deleted successfully!");
+
+                clearFields();
+                loadVoters();
+
+            } catch (SQLException e) {
+
+                con.rollback();
+                showError("Error deleting voter: " + e.getMessage());
+
+            } finally {
+                con.setAutoCommit(true);
             }
 
         } catch (SQLException e) {
-
-            showError(
-                    "Error deleting voter.\n"
-                    + "The voter may already be linked to a vote.\n\n"
-                    + e.getMessage());
+            showError("Database error: " + e.getMessage());
         }
     }
 
@@ -445,7 +514,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         emailField.setText("");
 
         voterTable.clearSelection();
-
         firstNameField.requestFocusInWindow();
     }
 
@@ -481,9 +549,12 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         } else if (e.getSource() == clearButton) {
 
             clearFields();
+
+        } else if (e.getSource() == refreshButton) {
+
+            loadVoters();
         }
     }
 }
-
 
 
