@@ -85,9 +85,28 @@ public class VoterDashboard extends JFrame implements ActionListener {
         sectionLabel.setForeground(new Color(20, 55, 85));
         sectionLabel.setBounds(35, 125, 400, 35);
 
-        refreshButton = new JButton("Refresh");
+        refreshButton = new JButton("↻  Refresh");
         refreshButton.setBounds(745, 125, 110, 35);
+        refreshButton.setFont(new Font("Arial", Font.BOLD, 14));
+        refreshButton.setForeground(new Color(20, 90, 150));
+        refreshButton.setBackground(new Color(240, 246, 252));
+        refreshButton.setBorderPainted(false);
+        refreshButton.setFocusPainted(false);
+        refreshButton.setContentAreaFilled(false);
+        refreshButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         refreshButton.addActionListener(this);
+
+        refreshButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                refreshButton.setForeground(new Color(35, 125, 225));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                refreshButton.setForeground(new Color(20, 90, 150));
+            }
+        });
 
         electionPanel = new JPanel();
         electionPanel.setLayout(new BoxLayout(electionPanel, BoxLayout.Y_AXIS));
@@ -134,10 +153,17 @@ public class VoterDashboard extends JFrame implements ActionListener {
                 int electionID = rs.getInt("election_id");
                 String name = rs.getString("election_name");
                 String description = rs.getString("description");
-                LocalDateTime start = rs.getTimestamp(
-                        "start_datetime").toLocalDateTime();
-                LocalDateTime end = rs.getTimestamp(
-                        "end_datetime").toLocalDateTime();
+
+                Timestamp startTimestamp = rs.getTimestamp("start_datetime");
+                Timestamp endTimestamp = rs.getTimestamp("end_datetime");
+
+                if (startTimestamp == null || endTimestamp == null) {
+                    continue;
+                }
+
+                LocalDateTime start = startTimestamp.toLocalDateTime();
+                LocalDateTime end = endTimestamp.toLocalDateTime();
+
                 String status = rs.getString("status");
 
                 String displayStatus = getElectionStatus(
@@ -189,15 +215,15 @@ public class VoterDashboard extends JFrame implements ActionListener {
 
         LocalDateTime now = LocalDateTime.now();
 
-        if ("ENDED".equals(status) || !now.isBefore(end)) {
+        if ("ENDED".equalsIgnoreCase(status) || !now.isBefore(end)) {
             return "CLOSED";
         }
 
-        if ("NOT STARTED".equals(status) || now.isBefore(start)) {
+        if ("NOT STARTED".equalsIgnoreCase(status) || now.isBefore(start)) {
             return "UPCOMING";
         }
 
-        if ("ONGOING".equals(status)
+        if ("ONGOING".equalsIgnoreCase(status)
                 && !now.isBefore(start)
                 && now.isBefore(end)) {
             return "OPEN";
@@ -323,6 +349,3 @@ public class VoterDashboard extends JFrame implements ActionListener {
         }
     }
 }
-
-
-
