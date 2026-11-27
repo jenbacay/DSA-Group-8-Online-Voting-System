@@ -13,13 +13,20 @@ public class VoterDashboard extends JFrame implements ActionListener {
     private String voterName;
     private String voterID;
 
-    private JPanel mainPanel, headerPanel, contentPanel, electionPanel;
+    private JPanel mainPanel, headerPanel, electionPanel;
     private JButton logoutButton, refreshButton;
-
     private CardLayout cardLayout;
 
     private static final String DASHBOARD = "DASHBOARD";
     private static final String DETAILS = "DETAILS";
+    private static final String CANDIDATES = "CANDIDATES";
+    private static final String CAST_VOTE = "CAST_VOTE";
+    private static final String RESULTS = "RESULTS";
+
+    private int currentElectionID;
+    private String currentElectionName;
+    private String currentElectionDescription;
+    private String currentElectionStatus;
 
     public VoterDashboard(String voterName, String voterID) {
 
@@ -33,12 +40,15 @@ public class VoterDashboard extends JFrame implements ActionListener {
         setResizable(false);
 
         cardLayout = new CardLayout();
-
         mainPanel = new JPanel(cardLayout);
         mainPanel.setBackground(new Color(240, 246, 252));
 
         createDashboard();
-        mainPanel.add(createDetailsContainer(), DETAILS);
+
+        mainPanel.add(new JPanel(), DETAILS);
+        mainPanel.add(new JPanel(), CANDIDATES);
+        mainPanel.add(new JPanel(), CAST_VOTE);
+        mainPanel.add(new JPanel(), RESULTS);
 
         add(mainPanel);
 
@@ -95,18 +105,6 @@ public class VoterDashboard extends JFrame implements ActionListener {
         refreshButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         refreshButton.addActionListener(this);
 
-        refreshButton.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                refreshButton.setBackground(new Color(15, 135, 75));
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                refreshButton.setBackground(new Color(20, 160, 90));
-            }
-        });
-
         electionPanel = new JPanel();
         electionPanel.setLayout(
                 new BoxLayout(electionPanel, BoxLayout.Y_AXIS)
@@ -125,14 +123,6 @@ public class VoterDashboard extends JFrame implements ActionListener {
         dashboardPanel.add(scrollPane);
 
         mainPanel.add(dashboardPanel, DASHBOARD);
-    }
-
-    private JPanel createDetailsContainer() {
-
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(240, 246, 252));
-
-        return panel;
     }
 
     private void loadElections() {
@@ -185,7 +175,6 @@ public class VoterDashboard extends JFrame implements ActionListener {
                 ));
 
                 electionPanel.add(Box.createVerticalStrut(15));
-
                 count++;
             }
 
@@ -195,10 +184,7 @@ public class VoterDashboard extends JFrame implements ActionListener {
                         "No elections available at the moment."
                 );
 
-                emptyLabel.setFont(
-                        new Font("Arial", Font.PLAIN, 16)
-                );
-
+                emptyLabel.setFont(new Font("Arial", Font.PLAIN, 16));
                 emptyLabel.setForeground(Color.GRAY);
 
                 electionPanel.add(emptyLabel);
@@ -254,7 +240,6 @@ public class VoterDashboard extends JFrame implements ActionListener {
         card.setPreferredSize(new Dimension(790, 155));
         card.setMaximumSize(new Dimension(790, 155));
         card.setMinimumSize(new Dimension(790, 155));
-
         card.setBackground(Color.WHITE);
         card.setBorder(new LineBorder(
                 new Color(210, 220, 230), 1, true
@@ -268,9 +253,7 @@ public class VoterDashboard extends JFrame implements ActionListener {
         JLabel descriptionLabel = new JLabel(
                 description == null ? "" : description
         );
-        descriptionLabel.setFont(
-                new Font("Arial", Font.PLAIN, 13)
-        );
+        descriptionLabel.setFont(new Font("Arial", Font.PLAIN, 13));
         descriptionLabel.setForeground(Color.GRAY);
         descriptionLabel.setBounds(20, 50, 550, 25);
 
@@ -316,7 +299,12 @@ public class VoterDashboard extends JFrame implements ActionListener {
             String description,
             String status) {
 
-        VoterElectionDetailsPanel detailsPanel =
+        currentElectionID = electionID;
+        currentElectionName = name;
+        currentElectionDescription = description;
+        currentElectionStatus = status;
+
+        VoterElectionDetailsPanel panel =
                 new VoterElectionDetailsPanel(
                         voterName,
                         voterID,
@@ -324,22 +312,74 @@ public class VoterDashboard extends JFrame implements ActionListener {
                         name,
                         description,
                         status,
-                        () -> {
-                            cardLayout.show(mainPanel, DASHBOARD);
-                            loadElections();
-                        }
+                        this::showDashboard,
+                        this::showCandidates,
+                        this::showCastVote,
+                        this::showResults
                 );
 
-        JPanel detailsContainer =
-                (JPanel) mainPanel.getComponent(1);
-
-        detailsContainer.removeAll();
-        detailsContainer.add(detailsPanel, BorderLayout.CENTER);
-
-        detailsContainer.revalidate();
-        detailsContainer.repaint();
-
+        replaceCard(DETAILS, panel);
         cardLayout.show(mainPanel, DETAILS);
+    }
+
+    private void showCandidates() {
+
+        VoterCandidatePanel panel = new VoterCandidatePanel(
+                voterName,
+                voterID,
+                currentElectionID,
+                currentElectionName,
+                this::showDetails
+        );
+
+        replaceCard(CANDIDATES, panel);
+        cardLayout.show(mainPanel, CANDIDATES);
+    }
+
+    private void showCastVote() {
+
+        CastVotePanel panel = new CastVotePanel(
+                voterName,
+                voterID,
+                currentElectionID,
+                currentElectionName,
+                currentElectionStatus,
+                this::showDetails,
+                this::showDetails
+        );
+
+        replaceCard(CAST_VOTE, panel);
+        cardLayout.show(mainPanel, CAST_VOTE);
+    }
+
+    private void showResults() {
+
+        VoterElectionResultsPanel panel =
+                new VoterElectionResultsPanel(
+                        voterName,
+                        voterID,
+                        currentElectionID,
+                        this::showDetails
+                );
+
+        replaceCard(RESULTS, panel);
+        cardLayout.show(mainPanel, RESULTS);
+    }
+
+    private void replaceCard(String cardName, JPanel panel) {
+
+        mainPanel.add(panel, cardName);
+        mainPanel.revalidate();
+        mainPanel.repaint();
+    }
+
+    private void showDetails() {
+        cardLayout.show(mainPanel, DETAILS);
+    }
+
+    private void showDashboard() {
+        cardLayout.show(mainPanel, DASHBOARD);
+        loadElections();
     }
 
     @Override
