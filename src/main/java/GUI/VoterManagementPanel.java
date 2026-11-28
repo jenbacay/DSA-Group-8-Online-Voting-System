@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
@@ -25,7 +27,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
     private final Color buttonColor = new Color(220, 233, 245);
 
     public VoterManagementPanel() {
-
         setLayout(null);
         setBackground(background);
 
@@ -63,7 +64,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
                     "Email",
                     "Registered"
                 }, 0) {
-
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -89,9 +89,7 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
 
         JScrollPane scrollPane = new JScrollPane(voterTable);
         scrollPane.setBounds(25, 205, 655, 320);
-        scrollPane.setBorder(
-                new LineBorder(new Color(125, 145, 165)));
-
+        scrollPane.setBorder(new LineBorder(new Color(125, 145, 165)));
         add(scrollPane);
 
         updateButton.addActionListener(this);
@@ -100,26 +98,23 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         refreshButton.addActionListener(this);
 
         voterTable.getSelectionModel().addListSelectionListener(e -> {
-
             if (!e.getValueIsAdjusting()) {
-
                 int row = voterTable.getSelectedRow();
 
                 if (row >= 0) {
+                    int modelRow = voterTable.convertRowIndexToModel(row);
 
                     firstNameField.setText(
-                            tableModel.getValueAt(row, 1).toString());
+                            tableModel.getValueAt(modelRow, 1).toString());
 
                     lastNameField.setText(
-                            tableModel.getValueAt(row, 2).toString());
+                            tableModel.getValueAt(modelRow, 2).toString());
 
                     usernameField.setText(
-                            tableModel.getValueAt(row, 3).toString());
+                            tableModel.getValueAt(modelRow, 3).toString());
 
-                    Object email = tableModel.getValueAt(row, 4);
-
-                    emailField.setText(
-                            email == null ? "" : email.toString());
+                    Object email = tableModel.getValueAt(modelRow, 4);
+                    emailField.setText(email == null ? "" : email.toString());
                 }
             }
         });
@@ -127,50 +122,37 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
         loadVoters();
     }
 
-    private JLabel createLabel(
-            String text, int x, int y, int width) {
-
+    private JLabel createLabel(String text, int x, int y, int width) {
         JLabel label = new JLabel(text);
         label.setBounds(x, y, width, 25);
         label.setFont(new Font("Arial", Font.BOLD, 12));
         label.setForeground(darkBlue);
-
         add(label);
-
         return label;
     }
 
-    private JTextField createTextField(
-            int x, int y, int width) {
-
+    private JTextField createTextField(int x, int y, int width) {
         JTextField field = new JTextField();
         field.setBounds(x, y, width, 30);
         field.setFont(new Font("Arial", Font.PLAIN, 12));
         field.setBorder(new LineBorder(Color.GRAY));
-
         add(field);
-
         return field;
     }
 
     private JButton createButton(String text, int x) {
-
         JButton button = new JButton(text);
         button.setBounds(x, 155, 90, 35);
         button.setFont(new Font("Arial", Font.BOLD, 12));
         button.setForeground(darkBlue);
         button.setBackground(buttonColor);
         button.setFocusPainted(false);
-        button.setBorder(
-                new LineBorder(new Color(150, 170, 190)));
-
+        button.setBorder(new LineBorder(new Color(150, 170, 190)));
         add(button);
-
         return button;
     }
 
     private void loadVoters() {
-
         tableModel.setRowCount(0);
 
         String sql = "SELECT v.voter_id, v.first_name, "
@@ -182,30 +164,21 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
                 + "WHERE a.role = 'VOTER' "
                 + "ORDER BY v.voter_id";
 
-        try (Connection con = DBConnection.getConnection()) {
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
+            while (rs.next()) {
+                String status = rs.getBoolean("registered") ? "Yes" : "No";
 
-            try (PreparedStatement ps = con.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-
-                while (rs.next()) {
-
-                    String status = rs.getBoolean("registered")
-                            ? "Yes" : "No";
-
-                    tableModel.addRow(new Object[]{
-                        rs.getString("voter_id"),
-                        rs.getString("first_name"),
-                        rs.getString("last_name"),
-                        rs.getString("username"),
-                        rs.getString("email"),
-                        status
-                    });
-                }
+                tableModel.addRow(new Object[]{
+                    rs.getString("voter_id"),
+                    rs.getString("first_name"),
+                    rs.getString("last_name"),
+                    rs.getString("username"),
+                    rs.getString("email"),
+                    status
+                });
             }
 
         } catch (SQLException e) {
@@ -214,7 +187,37 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
     }
 
     public void refreshVoters() {
+        clearFields();
         loadVoters();
+    }
+
+    public static String generateNextVoterID(Connection con)
+            throws SQLException {
+
+        Set<Integer> usedIDs = new HashSet<>();
+
+        String sql = "SELECT voter_id FROM voters";
+
+        try (PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                String voterID = rs.getString("voter_id");
+
+                if (voterID != null && voterID.matches("V\\d+")) {
+                    int number = Integer.parseInt(voterID.substring(1));
+                    usedIDs.add(number);
+                }
+            }
+        }
+
+        int nextID = 1;
+
+        while (usedIDs.contains(nextID)) {
+            nextID++;
+        }
+
+        return String.format("V%03d", nextID);
     }
 
     private boolean isDuplicateName(
@@ -229,13 +232,11 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
                 + "AND voter_id <> ?";
 
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-
             ps.setString(1, firstName);
             ps.setString(2, lastName);
             ps.setString(3, currentVoterID);
 
             try (ResultSet rs = ps.executeQuery()) {
-
                 if (rs.next()) {
                     return rs.getInt(1) > 0;
                 }
@@ -246,7 +247,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
     }
 
     private void updateVoter() {
-
         int row = voterTable.getSelectedRow();
 
         if (row == -1) {
@@ -254,18 +254,15 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
             return;
         }
 
-        String voterID = tableModel.getValueAt(row, 0).toString();
+        row = voterTable.convertRowIndexToModel(row);
 
+        String voterID = tableModel.getValueAt(row, 0).toString();
         String firstName = firstNameField.getText().trim();
         String lastName = lastNameField.getText().trim();
         String email = emailField.getText().trim();
 
-        if (firstName.isEmpty()
-                || lastName.isEmpty()
-                || email.isEmpty()) {
-
-            showWarning(
-                    "First name, last name, and email are required.");
+        if (firstName.isEmpty() || lastName.isEmpty() || email.isEmpty()) {
+            showWarning("First name, last name, and email are required.");
             return;
         }
 
@@ -284,101 +281,64 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
                 + "WHERE account_id = ? AND role = 'VOTER'";
 
         String updateVoterSQL =
-                "UPDATE voters SET first_name = ?, "
-                + "last_name = ?, email = ? "
+                "UPDATE voters SET first_name = ?, last_name = ?, email = ? "
                 + "WHERE voter_id = ?";
 
         try (Connection con = DBConnection.getConnection()) {
-
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
-
             con.setAutoCommit(false);
 
             try {
-
-                if (isDuplicateName(
-                        con, firstName, lastName, voterID)) {
-
-                    con.rollback();
-
-                    showWarning(
-                            "Another voter already has this "
-                            + "first name and last name.");
-                    return;
+                if (isDuplicateName(con, firstName, lastName, voterID)) {
+                    throw new SQLException(
+                            "Another voter already has this first name "
+                            + "and last name.");
                 }
 
                 int accountID;
 
-                try (PreparedStatement ps =
-                        con.prepareStatement(accountIDSQL)) {
-
+                try (PreparedStatement ps = con.prepareStatement(accountIDSQL)) {
                     ps.setString(1, voterID);
 
                     try (ResultSet rs = ps.executeQuery()) {
-
                         if (!rs.next()) {
-                            throw new SQLException(
-                                    "Voter account was not found.");
+                            throw new SQLException("Voter account was not found.");
                         }
 
                         accountID = rs.getInt("account_id");
                     }
                 }
 
-                try (PreparedStatement ps =
-                        con.prepareStatement(updateAccountSQL)) {
-
+                try (PreparedStatement ps = con.prepareStatement(updateAccountSQL)) {
                     ps.setString(1, fullName);
                     ps.setString(2, email);
                     ps.setInt(3, accountID);
 
-                    int updated = ps.executeUpdate();
-
-                    if (updated != 1) {
-                        throw new SQLException(
-                                "Could not update voter account.");
+                    if (ps.executeUpdate() != 1) {
+                        throw new SQLException("Could not update voter account.");
                     }
                 }
 
-                try (PreparedStatement ps =
-                        con.prepareStatement(updateVoterSQL)) {
-
+                try (PreparedStatement ps = con.prepareStatement(updateVoterSQL)) {
                     ps.setString(1, firstName);
                     ps.setString(2, lastName);
                     ps.setString(3, email);
                     ps.setString(4, voterID);
 
-                    int updated = ps.executeUpdate();
-
-                    if (updated != 1) {
-                        throw new SQLException(
-                                "Could not update voter information.");
+                    if (ps.executeUpdate() != 1) {
+                        throw new SQLException("Could not update voter information.");
                     }
                 }
 
                 con.commit();
 
-                JOptionPane.showMessageDialog(
-                        this, "Voter updated successfully!");
+                JOptionPane.showMessageDialog(this, "Voter updated successfully!");
 
                 clearFields();
                 loadVoters();
 
             } catch (SQLException e) {
-
                 con.rollback();
-
-                if ("23000".equals(e.getSQLState())) {
-                    showWarning(
-                            "This email may already be registered.");
-                } else {
-                    showError("Error updating voter: "
-                            + e.getMessage());
-                }
-
+                showError("Error updating voter: " + e.getMessage());
             } finally {
                 con.setAutoCommit(true);
             }
@@ -389,7 +349,6 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
     }
 
     private void deleteVoter() {
-
         int row = voterTable.getSelectedRow();
 
         if (row == -1) {
@@ -397,106 +356,100 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
             return;
         }
 
+        row = voterTable.convertRowIndexToModel(row);
+
         String voterID = tableModel.getValueAt(row, 0).toString();
 
         int confirm = JOptionPane.showConfirmDialog(
                 this,
-                "Are you sure you want to delete voter "
-                + voterID + "?\n"
-                + "The associated account will also be deleted.",
-                "Confirm Delete",
-                JOptionPane.YES_NO_OPTION);
+                "Are you sure you want to delete voter " + voterID + "?\n\n"
+                + "This will permanently delete the voter's:\n"
+                + "- Vote records\n"
+                + "- Election status records\n"
+                + "- Voter information\n"
+                + "- Associated voter account\n\n"
+                + "This action cannot be undone.",
+                "Confirm Voter Deletion",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
 
         if (confirm != JOptionPane.YES_OPTION) {
             return;
         }
 
-        String checkVotesSQL =
-                "SELECT COUNT(*) FROM votes WHERE voter_id = ?";
-
-        String deleteAccountSQL =
-                "DELETE FROM accounts "
-                + "WHERE account_id = ? AND role = 'VOTER'";
+        String getAccountSQL =
+                "SELECT account_id FROM voters WHERE voter_id = ?";
 
         try (Connection con = DBConnection.getConnection()) {
-
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
-
             con.setAutoCommit(false);
 
             try {
-
-                try (PreparedStatement ps =
-                        con.prepareStatement(checkVotesSQL)) {
-
-                    ps.setString(1, voterID);
-
-                    try (ResultSet rs = ps.executeQuery()) {
-
-                        if (rs.next() && rs.getInt(1) > 0) {
-
-                            con.rollback();
-
-                            showWarning(
-                                    "This voter already has recorded "
-                                    + "votes and cannot be deleted.");
-
-                            return;
-                        }
-                    }
-                }
-
                 int accountID;
 
-                String getAccountSQL =
-                        "SELECT account_id FROM voters "
-                        + "WHERE voter_id = ?";
-
-                try (PreparedStatement ps =
-                        con.prepareStatement(getAccountSQL)) {
-
+                try (PreparedStatement ps = con.prepareStatement(getAccountSQL)) {
                     ps.setString(1, voterID);
 
                     try (ResultSet rs = ps.executeQuery()) {
-
                         if (!rs.next()) {
-                            throw new SQLException(
-                                    "Voter was not found.");
+                            throw new SQLException("Voter was not found.");
                         }
 
                         accountID = rs.getInt("account_id");
                     }
                 }
 
-                try (PreparedStatement ps =
-                        con.prepareStatement(deleteAccountSQL)) {
+                String deleteVotesSQL =
+                        "DELETE FROM votes WHERE voter_id = ?";
 
+                try (PreparedStatement ps = con.prepareStatement(deleteVotesSQL)) {
+                    ps.setString(1, voterID);
+                    ps.executeUpdate();
+                }
+
+                String deleteStatusSQL =
+                        "DELETE FROM voter_election_status WHERE voter_id = ?";
+
+                try (PreparedStatement ps = con.prepareStatement(deleteStatusSQL)) {
+                    ps.setString(1, voterID);
+                    ps.executeUpdate();
+                }
+
+                String deleteVoterSQL =
+                        "DELETE FROM voters WHERE voter_id = ?";
+
+                try (PreparedStatement ps = con.prepareStatement(deleteVoterSQL)) {
+                    ps.setString(1, voterID);
+
+                    if (ps.executeUpdate() != 1) {
+                        throw new SQLException("Could not delete voter information.");
+                    }
+                }
+
+                String deleteAccountSQL =
+                        "DELETE FROM accounts "
+                        + "WHERE account_id = ? AND role = 'VOTER'";
+
+                try (PreparedStatement ps = con.prepareStatement(deleteAccountSQL)) {
                     ps.setInt(1, accountID);
 
-                    int deleted = ps.executeUpdate();
-
-                    if (deleted != 1) {
-                        throw new SQLException(
-                                "Could not delete voter account.");
+                    if (ps.executeUpdate() != 1) {
+                        throw new SQLException("Could not delete voter account.");
                     }
                 }
 
                 con.commit();
 
                 JOptionPane.showMessageDialog(
-                        this, "Voter deleted successfully!");
+                        this,
+                        "Voter " + voterID + " and its related records "
+                        + "were deleted successfully.");
 
                 clearFields();
                 loadVoters();
 
             } catch (SQLException e) {
-
                 con.rollback();
                 showError("Error deleting voter: " + e.getMessage());
-
             } finally {
                 con.setAutoCommit(true);
             }
@@ -507,54 +460,34 @@ public class VoterManagementPanel extends JPanel implements ActionListener {
     }
 
     private void clearFields() {
-
         firstNameField.setText("");
         lastNameField.setText("");
         usernameField.setText("");
         emailField.setText("");
-
         voterTable.clearSelection();
         firstNameField.requestFocusInWindow();
     }
 
     private void showWarning(String message) {
-
         JOptionPane.showMessageDialog(
-                this,
-                message,
-                "Notice",
-                JOptionPane.WARNING_MESSAGE);
+                this, message, "Notice", JOptionPane.WARNING_MESSAGE);
     }
 
     private void showError(String message) {
-
         JOptionPane.showMessageDialog(
-                this,
-                message,
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+                this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
         if (e.getSource() == updateButton) {
-
             updateVoter();
-
         } else if (e.getSource() == deleteButton) {
-
             deleteVoter();
-
         } else if (e.getSource() == clearButton) {
-
             clearFields();
-
         } else if (e.getSource() == refreshButton) {
-
-            loadVoters();
+            refreshVoters();
         }
     }
 }
-
-
