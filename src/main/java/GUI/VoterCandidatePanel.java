@@ -26,9 +26,7 @@ public class VoterCandidatePanel extends JPanel implements ActionListener {
     private String voterName;
     private String voterID;
     private String electionName;
-
     private int electionID;
-
     private Runnable backAction;
 
     public VoterCandidatePanel(
@@ -53,8 +51,7 @@ public class VoterCandidatePanel extends JPanel implements ActionListener {
 
     private void createComponents() {
 
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(null);
+        JPanel mainPanel = new JPanel(null);
         mainPanel.setBounds(20, 20, 845, 520);
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(
@@ -118,7 +115,6 @@ public class VoterCandidatePanel extends JPanel implements ActionListener {
         };
 
         tableModel = new DefaultTableModel(columns, 0) {
-
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -128,13 +124,9 @@ public class VoterCandidatePanel extends JPanel implements ActionListener {
         candidateTable = new JTable(tableModel);
         candidateTable.setFont(new Font("Arial", Font.PLAIN, 13));
         candidateTable.setRowHeight(30);
-        candidateTable.setSelectionBackground(
-                new Color(210, 230, 250)
-        );
+        candidateTable.setSelectionBackground(new Color(210, 230, 250));
         candidateTable.setSelectionForeground(Color.BLACK);
-        candidateTable.setGridColor(
-                new Color(220, 225, 230)
-        );
+        candidateTable.setGridColor(new Color(220, 225, 230));
 
         JTableHeader header = candidateTable.getTableHeader();
         header.setFont(new Font("Arial", Font.BOLD, 13));
@@ -147,9 +139,7 @@ public class VoterCandidatePanel extends JPanel implements ActionListener {
 
         JScrollPane scrollPane = new JScrollPane(candidateTable);
         scrollPane.setBounds(35, 195, 770, 250);
-        scrollPane.setBorder(
-                new LineBorder(new Color(210, 220, 230))
-        );
+        scrollPane.setBorder(new LineBorder(new Color(210, 220, 230)));
 
         mainPanel.add(scrollPane);
 
@@ -169,8 +159,7 @@ public class VoterCandidatePanel extends JPanel implements ActionListener {
         tableModel.setRowCount(0);
 
         String sql =
-            "SELECT c.candidate_id, c.name, c.party, "
-            + "ep.position_name "
+            "SELECT c.candidate_id, c.name, c.party, ep.position_name "
             + "FROM candidates c "
             + "INNER JOIN election_positions ep "
             + "ON c.position_id = ep.position_id "
@@ -199,11 +188,9 @@ public class VoterCandidatePanel extends JPanel implements ActionListener {
                 }
 
                 if (!hasCandidates) {
-
                     JOptionPane.showMessageDialog(
                             this,
-                            "There are currently no candidates "
-                            + "for this election.",
+                            "There are currently no candidates for this election.",
                             "No Candidates",
                             JOptionPane.INFORMATION_MESSAGE
                     );
@@ -226,11 +213,8 @@ public class VoterCandidatePanel extends JPanel implements ActionListener {
         String keyword = searchField.getText().trim();
 
         if (keyword.isEmpty()) {
-
             sorter.setRowFilter(null);
-
         } else {
-
             sorter.setRowFilter(
                     RowFilter.regexFilter(
                             "(?i)" + java.util.regex.Pattern.quote(keyword)
@@ -254,10 +238,9 @@ public class VoterCandidatePanel extends JPanel implements ActionListener {
 
         } else if (e.getSource() == backButton) {
 
-            backAction.run();
+            if (backAction != null) {
+                backAction.run();
+            }
         }
     }
 }
-
-
-
