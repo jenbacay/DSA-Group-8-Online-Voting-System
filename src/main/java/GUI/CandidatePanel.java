@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
@@ -364,27 +366,32 @@ public class CandidatePanel extends JPanel implements ActionListener {
     private String generateCandidateID(Connection con)
             throws SQLException {
 
-        String sql = "SELECT MAX(CAST(SUBSTRING(candidate_id, 2) "
-                   + "AS UNSIGNED)) AS last_id "
-                   + "FROM candidates "
+        Set<Integer> usedIDs = new HashSet<>();
+
+        String sql = "SELECT candidate_id FROM candidates "
                    + "WHERE candidate_id REGEXP '^C[0-9]+$'";
 
         try (PreparedStatement pst = con.prepareStatement(sql);
              ResultSet rs = pst.executeQuery()) {
 
-            if (rs.next()) {
+            while (rs.next()) {
 
-                int lastID = rs.getInt("last_id");
+                String candidateID = rs.getString("candidate_id");
 
-                if (rs.wasNull()) {
-                    lastID = 0;
-                }
+                int number = Integer.parseInt(
+                        candidateID.substring(1));
 
-                return String.format("C%03d", lastID + 1);
+                usedIDs.add(number);
             }
         }
 
-        return "C001";
+        int nextID = 1;
+
+        while (usedIDs.contains(nextID)) {
+            nextID++;
+        }
+
+        return String.format("C%03d", nextID);
     }
 
     private boolean validateCandidate() {
@@ -553,43 +560,68 @@ public class CandidatePanel extends JPanel implements ActionListener {
             return;
         }
 
-        String sql = "DELETE c FROM candidates c "
-                   + "INNER JOIN election_positions ep "
-                   + "ON c.position_id = ep.position_id "
-                   + "WHERE c.candidate_id = ? "
-                   + "AND ep.election_id = ?";
+        String checkVotesSQL =
+                "SELECT COUNT(*) FROM votes WHERE candidate_id = ?";
 
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement pst = con.prepareStatement(sql)) {
+        String deleteSQL = "DELETE c FROM candidates c "
+                         + "INNER JOIN election_positions ep "
+                         + "ON c.position_id = ep.position_id "
+                         + "WHERE c.candidate_id = ? "
+                         + "AND ep.election_id = ?";
 
-            pst.setString(1, selectedCandidateId);
-            pst.setInt(2, getSelectedElectionId());
+        try (Connection con = DBConnection.getConnection()) {
 
-            int result = pst.executeUpdate();
+            try (PreparedStatement checkPst =
+                    con.prepareStatement(checkVotesSQL)) {
 
-            if (result > 0) {
+                checkPst.setString(1, selectedCandidateId);
 
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Candidate deleted successfully!");
+                try (ResultSet rs = checkPst.executeQuery()) {
 
-                clearFields();
-                loadCandidates();
+                    if (rs.next() && rs.getInt(1) > 0) {
 
-            } else {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "This candidate already has vote records.\n\n"
+                                + "The candidate cannot be deleted because "
+                                + "doing so may affect the election results.");
 
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Candidate not found in the selected election.");
+                        return;
+                    }
+                }
+            }
+
+            try (PreparedStatement pst =
+                    con.prepareStatement(deleteSQL)) {
+
+                pst.setString(1, selectedCandidateId);
+                pst.setInt(2, getSelectedElectionId());
+
+                int result = pst.executeUpdate();
+
+                if (result > 0) {
+
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Candidate deleted successfully!\n"
+                            + "The Candidate ID can now be reused.");
+
+                    clearFields();
+                    loadCandidates();
+
+                } else {
+
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Candidate not found in the selected election.");
+                }
             }
 
         } catch (SQLException e) {
 
             JOptionPane.showMessageDialog(
                     this,
-                    "Unable to delete candidate.\n"
-                    + "The candidate may already be connected "
-                    + "to a vote record.\n\n"
+                    "Unable to delete candidate.\n\n"
                     + e.getMessage());
         }
     }
@@ -622,7 +654,6 @@ public class CandidatePanel extends JPanel implements ActionListener {
                 while (rs.next()) {
 
                     Object[] row = {
-
                         rs.getString("candidate_id"),
                         rs.getString("name"),
                         rs.getString("party"),
@@ -685,5 +716,3 @@ public class CandidatePanel extends JPanel implements ActionListener {
         }
     }
 }
-
-
