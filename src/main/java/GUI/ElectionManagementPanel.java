@@ -9,33 +9,28 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 
 public class ElectionManagementPanel extends JPanel implements ActionListener {
 
-    private JLabel titleLabel, nameLabel, startLabel, endLabel, descriptionLabel;
+    private JLabel titleLabel, nameLabel, typeLabel, startLabel, endLabel, descriptionLabel;
     private JTextField nameField, startField, endField;
+    private JComboBox<String> typeComboBox;
     private JTextArea descriptionArea;
-    private JButton addButton, updateButton, deleteButton, clearButton, startButton, endButton;
+    private JButton addButton, updateButton, deleteButton, clearButton;
+    private JButton startButton, endButton;
     private JTable electionTable;
     private DefaultTableModel tableModel;
-    private String selectedElectionId = null;
+    private Integer selectedElectionId = null;
     private final Color darkBlue = new Color(20, 55, 85);
     private final Color backgroundColor = new Color(240, 246, 252);
     private final Color buttonColor = new Color(220, 233, 245);
-    private final Color green = new Color(20, 170, 105);
-    private final Color red = new Color(210, 65, 65);
-
-    private final DateTimeFormatter formatter =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public ElectionManagementPanel() {
-
         setLayout(null);
         setBackground(backgroundColor);
 
@@ -46,92 +41,97 @@ public class ElectionManagementPanel extends JPanel implements ActionListener {
         add(titleLabel);
 
         nameLabel = createLabel("Election Name:");
-        nameLabel.setBounds(25, 75, 120, 25);
+        nameLabel.setBounds(25, 75, 110, 25);
         add(nameLabel);
 
         nameField = createTextField();
         nameField.setBounds(140, 72, 200, 30);
         add(nameField);
 
+        typeLabel = createLabel("Election Type:");
+        typeLabel.setBounds(365, 75, 100, 25);
+        add(typeLabel);
+
+        typeComboBox = new JComboBox<>(new String[]{
+            "SK",
+            "Barangay"
+        });
+        typeComboBox.setFont(new Font("Arial", Font.PLAIN, 13));
+        typeComboBox.setBounds(465, 72, 210, 30);
+        add(typeComboBox);
+
         startLabel = createLabel("Start Date:");
-        startLabel.setBounds(365, 75, 100, 25);
+        startLabel.setBounds(25, 115, 110, 25);
         add(startLabel);
 
         startField = createTextField();
-        startField.setBounds(465, 72, 210, 30);
-        startField.setText("2026-12-01 08:00:00");
+        startField.setBounds(140, 112, 200, 30);
+        startField.setToolTipText("Format: yyyy-MM-dd HH:mm:ss");
         add(startField);
 
         endLabel = createLabel("End Date:");
-        endLabel.setBounds(25, 115, 120, 25);
+        endLabel.setBounds(365, 115, 100, 25);
         add(endLabel);
 
         endField = createTextField();
-        endField.setBounds(140, 112, 200, 30);
-        endField.setText("2026-12-01 17:00:00");
+        endField.setBounds(465, 112, 210, 30);
+        endField.setToolTipText("Format: yyyy-MM-dd HH:mm:ss");
         add(endField);
 
         descriptionLabel = createLabel("Description:");
-        descriptionLabel.setBounds(365, 115, 100, 25);
+        descriptionLabel.setBounds(25, 155, 110, 25);
         add(descriptionLabel);
 
         descriptionArea = new JTextArea();
         descriptionArea.setFont(new Font("Arial", Font.PLAIN, 13));
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
-        descriptionArea.setBorder(
-                new LineBorder(new Color(190, 205, 220)));
+        descriptionArea.setBorder(new LineBorder(new Color(190, 205, 220)));
 
-        JScrollPane descriptionScroll =
-                new JScrollPane(descriptionArea);
-
-        descriptionScroll.setBounds(465, 112, 210, 65);
+        JScrollPane descriptionScroll = new JScrollPane(descriptionArea);
+        descriptionScroll.setBounds(140, 152, 535, 65);
         add(descriptionScroll);
 
         addButton = createButton("Add");
-        addButton.setBounds(25, 195, 90, 32);
+        addButton.setBounds(25, 235, 90, 32);
         addButton.addActionListener(this);
         add(addButton);
 
         updateButton = createButton("Update");
-        updateButton.setBounds(125, 195, 90, 32);
+        updateButton.setBounds(125, 235, 90, 32);
         updateButton.addActionListener(this);
         add(updateButton);
 
         deleteButton = createButton("Delete");
-        deleteButton.setBounds(225, 195, 90, 32);
+        deleteButton.setBounds(225, 235, 90, 32);
         deleteButton.addActionListener(this);
         add(deleteButton);
 
         clearButton = createButton("Clear");
-        clearButton.setBounds(325, 195, 90, 32);
+        clearButton.setBounds(325, 235, 90, 32);
         clearButton.addActionListener(this);
         add(clearButton);
 
         startButton = createButton("Start Election");
-        startButton.setBounds(425, 195, 120, 32);
-        startButton.setBackground(green);
-        startButton.setForeground(Color.WHITE);
+        startButton.setBounds(425, 235, 120, 32);
         startButton.addActionListener(this);
         add(startButton);
 
         endButton = createButton("End Election");
-        endButton.setBounds(555, 195, 120, 32);
-        endButton.setBackground(red);
-        endButton.setForeground(Color.WHITE);
+        endButton.setBounds(555, 235, 120, 32);
         endButton.addActionListener(this);
         add(endButton);
 
         String[] columns = {
             "Election ID",
             "Election Name",
+            "Election Type",
             "Start Date",
             "End Date",
             "Status"
         };
 
         tableModel = new DefaultTableModel(columns, 0) {
-
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -141,34 +141,25 @@ public class ElectionManagementPanel extends JPanel implements ActionListener {
         electionTable = new JTable(tableModel);
         electionTable.setFont(new Font("Arial", Font.PLAIN, 12));
         electionTable.setRowHeight(25);
-        electionTable.setSelectionMode(
-                ListSelectionModel.SINGLE_SELECTION);
-
-        electionTable.getTableHeader().setFont(
-                new Font("Arial", Font.BOLD, 12));
-
+        electionTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        electionTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         electionTable.getTableHeader().setBackground(darkBlue);
         electionTable.getTableHeader().setForeground(Color.WHITE);
-        electionTable.getTableHeader().setReorderingAllowed(false);
 
         JScrollPane scrollPane = new JScrollPane(electionTable);
-        scrollPane.setBounds(25, 245, 655, 290);
-        scrollPane.setBorder(
-                new LineBorder(new Color(200, 210, 220)));
-
+        scrollPane.setBounds(25, 285, 650, 250);
+        scrollPane.setBorder(new LineBorder(new Color(200, 210, 220)));
         add(scrollPane);
 
-        electionTable.getSelectionModel()
-                .addListSelectionListener(e -> {
-
+        electionTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
-
                 int row = electionTable.getSelectedRow();
 
                 if (row >= 0) {
+                    int modelRow = electionTable.convertRowIndexToModel(row);
 
-                    selectedElectionId =
-                            tableModel.getValueAt(row, 0).toString();
+                    selectedElectionId = Integer.parseInt(
+                            tableModel.getValueAt(modelRow, 0).toString());
 
                     loadSelectedElection();
                 }
@@ -179,139 +170,193 @@ public class ElectionManagementPanel extends JPanel implements ActionListener {
     }
 
     private JLabel createLabel(String text) {
-
         JLabel label = new JLabel(text);
         label.setFont(new Font("Arial", Font.BOLD, 12));
         label.setForeground(darkBlue);
-
         return label;
     }
 
     private JTextField createTextField() {
-
         JTextField field = new JTextField();
         field.setFont(new Font("Arial", Font.PLAIN, 13));
-        field.setBorder(
-                new LineBorder(new Color(190, 205, 220)));
-
+        field.setBorder(new LineBorder(new Color(190, 205, 220)));
         return field;
     }
 
     private JButton createButton(String text) {
-
         JButton button = new JButton(text);
         button.setFont(new Font("Arial", Font.BOLD, 12));
         button.setBackground(buttonColor);
         button.setForeground(darkBlue);
         button.setFocusPainted(false);
-        button.setBorder(
-                new LineBorder(new Color(150, 170, 190)));
-
         return button;
     }
 
     private boolean validateElection() {
-
         String name = nameField.getText().trim();
         String start = startField.getText().trim();
         String end = endField.getText().trim();
 
         if (name.isEmpty() || start.isEmpty() || end.isEmpty()) {
-
             JOptionPane.showMessageDialog(
                     this,
-                    "Please complete all required fields.",
-                    "Notice",
-                    JOptionPane.WARNING_MESSAGE);
+                    "Please complete the election name and date fields.");
+            return false;
+        }
 
+        if (name.length() > 100) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Election name must not exceed 100 characters.");
             return false;
         }
 
         try {
-
             LocalDateTime startDate =
-                    LocalDateTime.parse(start, formatter);
+                    LocalDateTime.parse(start.replace(" ", "T"));
 
             LocalDateTime endDate =
-                    LocalDateTime.parse(end, formatter);
+                    LocalDateTime.parse(end.replace(" ", "T"));
 
             if (!endDate.isAfter(startDate)) {
-
                 JOptionPane.showMessageDialog(
                         this,
-                        "End date and time must be later than "
-                        + "the start date and time.",
-                        "Invalid Date",
-                        JOptionPane.WARNING_MESSAGE);
-
+                        "End date must be later than start date.");
                 return false;
             }
 
-        } catch (DateTimeParseException e) {
-
+        } catch (Exception e) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Invalid date format!\n\n"
-                    + "Please use:\n"
-                    + "yyyy-MM-dd HH:mm:ss\n\n"
-                    + "Example: 2026-12-01 08:00:00",
-                    "Invalid Date",
-                    JOptionPane.WARNING_MESSAGE);
-
+                    "Invalid date format.\n"
+                    + "Please use: yyyy-MM-dd HH:mm:ss");
             return false;
         }
 
         return true;
     }
 
-    private void addElection() {
+    private Timestamp getTimestamp(String value) {
+        LocalDateTime dateTime =
+                LocalDateTime.parse(value.trim().replace(" ", "T"));
 
+        return Timestamp.valueOf(dateTime);
+    }
+
+    private void insertDefaultPositions(
+            Connection con,
+            int electionId,
+            String electionType) throws SQLException {
+
+        String sql = "INSERT INTO election_positions "
+                + "(election_id, position_name, max_selections) "
+                + "VALUES (?, ?, ?)";
+
+        String[][] positions;
+
+        if (electionType.equalsIgnoreCase("SK")) {
+            positions = new String[][]{
+                {"SK Chairperson", "1"},
+                {"SK Kagawad", "7"},
+                {"SK Treasurer", "1"},
+                {"SK Secretary", "1"}
+            };
+
+        } else if (electionType.equalsIgnoreCase("Barangay")) {
+            positions = new String[][]{
+                {"Punong Barangay", "1"},
+                {"Barangay Kagawad", "7"}
+            };
+
+        } else {
+            throw new SQLException("Unsupported election type.");
+        }
+
+        try (PreparedStatement pst = con.prepareStatement(sql)) {
+            for (String[] position : positions) {
+                pst.setInt(1, electionId);
+                pst.setString(2, position[0]);
+                pst.setInt(3, Integer.parseInt(position[1]));
+                pst.addBatch();
+            }
+
+            pst.executeBatch();
+        }
+    }
+
+    private void addElection() {
         if (!validateElection()) {
             return;
         }
 
         String sql = "INSERT INTO elections "
-                + "(election_name, description, "
+                + "(election_name, election_type, description, "
                 + "start_datetime, end_datetime) "
-                + "VALUES (?, ?, ?, ?)";
+                + "VALUES (?, ?, ?, ?, ?)";
 
         try (Connection con = DBConnection.getConnection()) {
+            con.setAutoCommit(false);
 
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
+            try {
+                int electionId;
 
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                try (PreparedStatement pst = con.prepareStatement(
+                        sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
 
-                pst.setString(1, nameField.getText().trim());
-                pst.setString(2, descriptionArea.getText().trim());
-                pst.setString(3, startField.getText().trim());
-                pst.setString(4, endField.getText().trim());
+                    pst.setString(1, nameField.getText().trim());
+                    pst.setString(2, typeComboBox.getSelectedItem().toString());
+                    pst.setString(3, descriptionArea.getText().trim());
+                    pst.setTimestamp(4, getTimestamp(startField.getText()));
+                    pst.setTimestamp(5, getTimestamp(endField.getText()));
 
-                pst.executeUpdate();
+                    pst.executeUpdate();
+
+                    try (ResultSet rs = pst.getGeneratedKeys()) {
+                        if (!rs.next()) {
+                            throw new SQLException(
+                                    "Unable to retrieve the new election ID.");
+                        }
+
+                        electionId = rs.getInt(1);
+                    }
+                }
+
+                insertDefaultPositions(
+                        con,
+                        electionId,
+                        typeComboBox.getSelectedItem().toString());
+
+                con.commit();
 
                 JOptionPane.showMessageDialog(
                         this,
-                        "Election added successfully!");
+                        "Election added successfully!\n"
+                        + "Default positions have been created.");
 
                 clearFields();
                 loadElections();
+
+            } catch (SQLException e) {
+                con.rollback();
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Error adding election: " + e.getMessage());
+            } finally {
+                con.setAutoCommit(true);
             }
 
         } catch (SQLException e) {
-
-            showError("Error adding election: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Database error: " + e.getMessage());
         }
     }
 
     private void updateElection() {
-
         if (selectedElectionId == null) {
-
-            showWarning(
+            JOptionPane.showMessageDialog(
+                    this,
                     "Please select an election from the table first.");
-
             return;
         }
 
@@ -319,119 +364,189 @@ public class ElectionManagementPanel extends JPanel implements ActionListener {
             return;
         }
 
-        String sql = "UPDATE elections SET "
-                + "election_name = ?, description = ?, "
+        String checkSql = "SELECT status FROM elections WHERE election_id = ?";
+
+        String updateSql = "UPDATE elections "
+                + "SET election_name = ?, description = ?, "
                 + "start_datetime = ?, end_datetime = ? "
-                + "WHERE election_id = ? "
-                + "AND status = 'NOT STARTED'";
+                + "WHERE election_id = ? AND status = 'NOT STARTED'";
 
-        try (Connection con = DBConnection.getConnection()) {
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement checkPst = con.prepareStatement(checkSql)) {
 
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
+            checkPst.setInt(1, selectedElectionId);
+
+            try (ResultSet rs = checkPst.executeQuery()) {
+                if (!rs.next()) {
+                    JOptionPane.showMessageDialog(this, "Election not found.");
+                    return;
+                }
+
+                if (!"NOT STARTED".equalsIgnoreCase(rs.getString("status"))) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Only elections that have not started can be updated.");
+                    return;
+                }
             }
 
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
-
+            try (PreparedStatement pst = con.prepareStatement(updateSql)) {
                 pst.setString(1, nameField.getText().trim());
                 pst.setString(2, descriptionArea.getText().trim());
-                pst.setString(3, startField.getText().trim());
-                pst.setString(4, endField.getText().trim());
-                pst.setInt(5, Integer.parseInt(selectedElectionId));
+                pst.setTimestamp(3, getTimestamp(startField.getText()));
+                pst.setTimestamp(4, getTimestamp(endField.getText()));
+                pst.setInt(5, selectedElectionId);
 
                 int result = pst.executeUpdate();
 
                 if (result > 0) {
-
                     JOptionPane.showMessageDialog(
                             this,
                             "Election updated successfully!");
 
+                    clearFields();
+                    loadElections();
+
                 } else {
-
-                    showWarning(
-                            "Only elections that have not started "
-                            + "can be updated.");
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Unable to update election.");
                 }
-
-                clearFields();
-                loadElections();
             }
 
         } catch (SQLException e) {
-
-            showError("Error updating election: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error updating election: " + e.getMessage());
         }
     }
 
     private void deleteElection() {
-
         if (selectedElectionId == null) {
-
-            showWarning(
+            JOptionPane.showMessageDialog(
+                    this,
                     "Please select an election from the table first.");
-
             return;
         }
 
         int confirm = JOptionPane.showConfirmDialog(
                 this,
-                "Are you sure you want to delete this election?",
-                "Confirm Delete",
-                JOptionPane.YES_NO_OPTION);
+                "Are you sure you want to permanently delete this election?\n\n"
+                + "This will also delete:\n"
+                + "- All votes under this election\n"
+                + "- All candidates under this election\n"
+                + "- All election positions\n"
+                + "- All voter election status records\n\n"
+                + "This action cannot be undone.",
+                "Confirm Election Deletion",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
 
         if (confirm != JOptionPane.YES_OPTION) {
             return;
         }
 
-        String sql = "DELETE FROM elections "
-                + "WHERE election_id = ? "
-                + "AND status = 'NOT STARTED'";
+        int electionID = selectedElectionId;
 
         try (Connection con = DBConnection.getConnection()) {
+            con.setAutoCommit(false);
 
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
+            try {
+                String deleteVotesSQL =
+                        "DELETE FROM votes "
+                        + "WHERE election_id = ? "
+                        + "OR candidate_id IN "
+                        + "(SELECT candidate_id FROM candidates "
+                        + "WHERE election_id = ?)";
 
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                try (PreparedStatement pst =
+                        con.prepareStatement(deleteVotesSQL)) {
 
-                pst.setInt(1, Integer.parseInt(selectedElectionId));
-
-                int result = pst.executeUpdate();
-
-                if (result > 0) {
-
-                    JOptionPane.showMessageDialog(
-                            this,
-                            "Election deleted successfully!");
-
-                } else {
-
-                    showWarning(
-                            "Only elections that have not started "
-                            + "can be deleted.");
+                    pst.setInt(1, electionID);
+                    pst.setInt(2, electionID);
+                    pst.executeUpdate();
                 }
+
+                String deleteStatusSQL =
+                        "DELETE FROM voter_election_status "
+                        + "WHERE election_id = ?";
+
+                try (PreparedStatement pst =
+                        con.prepareStatement(deleteStatusSQL)) {
+
+                    pst.setInt(1, electionID);
+                    pst.executeUpdate();
+                }
+
+                String deleteCandidatesSQL =
+                        "DELETE FROM candidates WHERE election_id = ?";
+
+                try (PreparedStatement pst =
+                        con.prepareStatement(deleteCandidatesSQL)) {
+
+                    pst.setInt(1, electionID);
+                    pst.executeUpdate();
+                }
+
+                String deletePositionsSQL =
+                        "DELETE FROM election_positions WHERE election_id = ?";
+
+                try (PreparedStatement pst =
+                        con.prepareStatement(deletePositionsSQL)) {
+
+                    pst.setInt(1, electionID);
+                    pst.executeUpdate();
+                }
+
+                String deleteElectionSQL =
+                        "DELETE FROM elections WHERE election_id = ?";
+
+                try (PreparedStatement pst =
+                        con.prepareStatement(deleteElectionSQL)) {
+
+                    pst.setInt(1, electionID);
+
+                    if (pst.executeUpdate() != 1) {
+                        throw new SQLException("Election was not found.");
+                    }
+                }
+
+                con.commit();
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Election and all its related records "
+                        + "were deleted successfully!");
 
                 clearFields();
                 loadElections();
+
+            } catch (SQLException e) {
+                con.rollback();
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Error deleting election.\n\n"
+                        + e.getMessage(),
+                        "Deletion Failed",
+                        JOptionPane.ERROR_MESSAGE);
+
+            } finally {
+                con.setAutoCommit(true);
             }
 
         } catch (SQLException e) {
-
-            showError(
-                    "Error deleting election: " + e.getMessage()
-                    + "\n\nThe election may have related records.");
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Database error: " + e.getMessage());
         }
     }
 
     private void startElection() {
-
         if (selectedElectionId == null) {
-
-            showWarning("Please select an election first.");
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select an election first.");
             return;
         }
 
@@ -445,56 +560,44 @@ public class ElectionManagementPanel extends JPanel implements ActionListener {
             return;
         }
 
-        String sql = "UPDATE elections SET status = 'ONGOING' "
-                + "WHERE election_id = ? "
-                + "AND status = 'NOT STARTED' "
-                + "AND NOW() >= start_datetime "
-                + "AND NOW() < end_datetime";
+        String sql = "UPDATE elections "
+                + "SET status = 'ONGOING' "
+                + "WHERE election_id = ? AND status = 'NOT STARTED'";
 
-        try (Connection con = DBConnection.getConnection()) {
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
 
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
+            pst.setInt(1, selectedElectionId);
 
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
+            int result = pst.executeUpdate();
 
-                pst.setInt(1, Integer.parseInt(selectedElectionId));
-
-                int result = pst.executeUpdate();
-
-                if (result > 0) {
-
-                    JOptionPane.showMessageDialog(
-                            this,
-                            "Election started successfully!");
-
-                } else {
-
-                    showWarning(
-                            "The election cannot be started.\n\n"
-                            + "Check the following:\n"
-                            + "- Election has not started yet.\n"
-                            + "- Current date and time is within "
-                            + "the election schedule.");
-                }
+            if (result > 0) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Election started successfully!");
 
                 clearFields();
                 loadElections();
+
+            } else {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Election cannot be started. "
+                        + "It may have already started or ended.");
             }
 
         } catch (SQLException e) {
-
-            showError("Error starting election: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error starting election: " + e.getMessage());
         }
     }
 
     private void endElection() {
-
         if (selectedElectionId == null) {
-
-            showWarning("Please select an election first.");
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select an election first.");
             return;
         }
 
@@ -508,189 +611,144 @@ public class ElectionManagementPanel extends JPanel implements ActionListener {
             return;
         }
 
-        String sql = "UPDATE elections SET status = 'ENDED' "
-                + "WHERE election_id = ? "
-                + "AND status = 'ONGOING'";
+        String sql = "UPDATE elections "
+                + "SET status = 'ENDED' "
+                + "WHERE election_id = ? AND status = 'ONGOING'";
 
-        try (Connection con = DBConnection.getConnection()) {
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
 
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
+            pst.setInt(1, selectedElectionId);
 
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
+            int result = pst.executeUpdate();
 
-                pst.setInt(1, Integer.parseInt(selectedElectionId));
-
-                int result = pst.executeUpdate();
-
-                if (result > 0) {
-
-                    JOptionPane.showMessageDialog(
-                            this,
-                            "Election ended successfully!");
-
-                } else {
-
-                    showWarning(
-                            "Only ongoing elections can be ended.");
-                }
+            if (result > 0) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Election ended successfully!");
 
                 clearFields();
                 loadElections();
+
+            } else {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Only ongoing elections can be ended.");
             }
 
         } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error ending election: " + e.getMessage());
+        }
+    }
 
-            showError("Error ending election: " + e.getMessage());
+    private void loadElections() {
+        tableModel.setRowCount(0);
+
+        String sql = "SELECT election_id, election_name, election_type, "
+                + "start_datetime, end_datetime, status "
+                + "FROM elections ORDER BY election_id DESC";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql);
+             ResultSet rs = pst.executeQuery()) {
+
+            while (rs.next()) {
+                Object[] row = {
+                    rs.getInt("election_id"),
+                    rs.getString("election_name"),
+                    rs.getString("election_type"),
+                    rs.getTimestamp("start_datetime"),
+                    rs.getTimestamp("end_datetime"),
+                    rs.getString("status")
+                };
+
+                tableModel.addRow(row);
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error loading elections: " + e.getMessage());
         }
     }
 
     private void loadSelectedElection() {
-
-        String sql = "SELECT * FROM elections "
-                + "WHERE election_id = ?";
-
-        try (Connection con = DBConnection.getConnection()) {
-
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
-
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
-
-                pst.setInt(1, Integer.parseInt(selectedElectionId));
-
-                try (ResultSet rs = pst.executeQuery()) {
-
-                    if (rs.next()) {
-
-                        nameField.setText(
-                                rs.getString("election_name"));
-
-                        descriptionArea.setText(
-                                rs.getString("description"));
-
-                        startField.setText(
-                                rs.getString("start_datetime"));
-
-                        endField.setText(
-                                rs.getString("end_datetime"));
-                    }
-                }
-            }
-
-        } catch (SQLException e) {
-
-            showError(
-                    "Error loading election details: "
-                    + e.getMessage());
+        if (selectedElectionId == null) {
+            return;
         }
-    }
 
-    public void loadElections() {
+        String sql = "SELECT * FROM elections WHERE election_id = ?";
 
-        tableModel.setRowCount(0);
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
 
-        String sql = "SELECT election_id, election_name, "
-                + "start_datetime, end_datetime, status "
-                + "FROM elections "
-                + "ORDER BY election_id DESC";
+            pst.setInt(1, selectedElectionId);
 
-        try (Connection con = DBConnection.getConnection()) {
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    nameField.setText(rs.getString("election_name"));
 
-            if (con == null) {
-                showError("Could not connect to the database.");
-                return;
-            }
+                    typeComboBox.setSelectedItem(
+                            rs.getString("election_type"));
 
-            try (PreparedStatement pst = con.prepareStatement(sql);
-                 ResultSet rs = pst.executeQuery()) {
+                    typeComboBox.setEnabled(false);
 
-                while (rs.next()) {
+                    descriptionArea.setText(rs.getString("description"));
 
-                    Object[] row = {
-                        rs.getInt("election_id"),
-                        rs.getString("election_name"),
-                        rs.getString("start_datetime"),
-                        rs.getString("end_datetime"),
-                        rs.getString("status")
-                    };
+                    startField.setText(
+                            rs.getTimestamp("start_datetime").toString());
 
-                    tableModel.addRow(row);
+                    endField.setText(
+                            rs.getTimestamp("end_datetime").toString());
                 }
             }
 
         } catch (SQLException e) {
-
-            showError("Error loading elections: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error loading selected election: " + e.getMessage());
         }
     }
 
     public void refreshElections() {
+        clearFields();
         loadElections();
     }
 
     private void clearFields() {
-
         nameField.setText("");
         startField.setText("");
         endField.setText("");
         descriptionArea.setText("");
 
+        typeComboBox.setSelectedIndex(0);
+        typeComboBox.setEnabled(true);
+
         selectedElectionId = null;
         electionTable.clearSelection();
     }
 
-    private void showWarning(String message) {
-
-        JOptionPane.showMessageDialog(
-                this,
-                message,
-                "Notice",
-                JOptionPane.WARNING_MESSAGE);
-    }
-
-    private void showError(String message) {
-
-        JOptionPane.showMessageDialog(
-                this,
-                message,
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-    }
-
     @Override
     public void actionPerformed(ActionEvent e) {
-
         if (e.getSource() == addButton) {
-
             addElection();
 
         } else if (e.getSource() == updateButton) {
-
             updateElection();
 
         } else if (e.getSource() == deleteButton) {
-
             deleteElection();
 
         } else if (e.getSource() == clearButton) {
-
             clearFields();
 
         } else if (e.getSource() == startButton) {
-
             startElection();
 
         } else if (e.getSource() == endButton) {
-
             endElection();
         }
     }
 }
-
-
-
